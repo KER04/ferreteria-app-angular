@@ -1,0 +1,415 @@
+<!-- Encabezado -->
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-on-surface">Usuarios</h2>
+    <p class="text-on-surface-variant text-sm mt-1">
+      Administración de cuentas, disponibilidad y roles asignados.
+    </p>
+  </div>
+</div>
+
+<!-- Aviso de permisos (401/403) -->
+@if (forbidden()) {
+  <div class="bg-error-container/60 border border-error text-on-error-container px-6 py-8 rounded-xl mb-6 flex flex-col items-center gap-2 text-center">
+    <span class="material-symbols-outlined text-5xl">lock</span>
+    <div class="font-bold text-lg">Requiere rol administrador</div>
+    <p class="text-sm opacity-80 max-w-md">
+      Este módulo está protegido en el backend (IsAdminRole). Inicia sesión con una cuenta
+      que tenga el rol Admin para gestionar usuarios.
+    </p>
+  </div>
+} @else {
+
+  <!-- Barra de búsqueda local -->
+  <div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6">
+    <div class="flex flex-col md:flex-row gap-4 md:items-end justify-between">
+      <div class="space-y-1 w-full md:max-w-sm">
+        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Buscar en esta página</label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg">search</span>
+          <input
+            type="text"
+            [ngModel]="query()"
+            (ngModelChange)="query.set($event)"
+            placeholder="Usuario, nombre o apellido..."
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 pl-10 pr-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="loadUsuarios()"
+        class="text-primary font-bold text-sm flex items-center gap-1 hover:underline h-10"
+      >
+        <span class="material-symbols-outlined text-lg">refresh</span>
+        Recargar
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  @if (error()) {
+    <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-6 flex items-center gap-2 text-sm">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Tabla de usuarios -->
+  <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+    <div class="overflow-x-auto custom-scrollbar">
+      <table class="w-full text-left border-collapse min-w-[900px]">
+        <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
+          <tr>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">ID</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Usuario</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Nombre completo</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center">Promedio</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center">Disponibilidad</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Roles</th>
+            <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant">
+          @if (loading()) {
+            <tr>
+              <td colspan="7" class="px-6 py-16 text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-4xl animate-spin block mb-2">progress_activity</span>
+                Cargando usuarios...
+              </td>
+            </tr>
+          } @else {
+            @for (u of filtrados(); track u.id) {
+              <tr class="hover:bg-surface-container-low transition-colors">
+                <!-- ID -->
+                <td class="px-6 py-4">
+                  <span class="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">#{{ u.id }}</span>
+                </td>
+
+                <!-- Usuario -->
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm uppercase">
+                      {{ u.username.charAt(0) }}
+                    </div>
+                    <span class="font-bold text-on-surface">{{ u.username }}</span>
+                  </div>
+                </td>
+
+                <!-- Nombre -->
+                <td class="px-6 py-4 text-sm text-on-surface">
+                  {{ u.first_name || '—' }} {{ u.last_name }}
+                </td>
+
+                <!-- Promedio -->
+                <td class="px-6 py-4 text-center text-sm font-medium text-on-surface-variant">
+                  {{ u.promedio ?? '—' }}
+                </td>
+
+                <!-- Disponibilidad -->
+                <td class="px-6 py-4 text-center">
+                  @if (u.disponibilidad) {
+                    <span class="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-1 rounded-full border border-green-200 uppercase tracking-wider">Disponible</span>
+                  } @else {
+                    <span class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-1 rounded-full border border-outline-variant uppercase tracking-wider">No disponible</span>
+                  }
+                </td>
+
+                <!-- Roles -->
+                <td class="px-6 py-4">
+                  <div class="flex flex-wrap gap-1">
+                    @for (r of u.roles; track r.id) {
+                      <span class="text-xs px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant font-medium">{{ r.nombre }}</span>
+                    } @empty {
+                      <span class="text-xs text-on-surface-variant italic">Sin roles</span>
+                    }
+                  </div>
+                </td>
+
+                <!-- Acciones -->
+                <td class="px-6 py-4 text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    (click)="openAsignarRol(u)"
+                    title="Asignar rol"
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1"
+                  >badge</button>
+                  <button
+                    type="button"
+                    (click)="openEdit(u)"
+                    title="Editar usuario"
+                    class="material-symbols-outlined text-on-surface-variant hover:text-primary p-1"
+                  >edit</button>
+                  <button
+                    type="button"
+                    (click)="openDelete(u)"
+                    title="Eliminar usuario"
+                    class="material-symbols-outlined text-on-surface-variant hover:text-error p-1"
+                  >delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+                  <span class="material-symbols-outlined text-4xl text-outline block mb-2">person_off</span>
+                  No se encontraron usuarios.
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="bg-surface-container-low px-6 py-3 flex items-center justify-between border-t border-outline-variant">
+      <span class="text-xs text-on-surface-variant">Mostrando {{ rangeStart() }} a {{ rangeEnd() }} de {{ count() }} usuarios</span>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="goToPage(page() - 1)"
+          [disabled]="page() === 1"
+          class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span class="material-symbols-outlined text-sm">chevron_left</span>
+        </button>
+
+        @for (n of pages(); track n) {
+          <button
+            type="button"
+            (click)="goToPage(n)"
+            [ngClass]="n === page()
+              ? 'border-primary bg-primary text-on-primary font-bold'
+              : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container'"
+            class="w-8 h-8 flex items-center justify-center rounded border text-xs transition-all"
+          >{{ n }}</button>
+        }
+
+        <button
+          type="button"
+          (click)="goToPage(page() + 1)"
+          [disabled]="page() === totalPages()"
+          class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <span class="material-symbols-outlined text-sm">chevron_right</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODAL: Editar usuario ══════════ -->
+@if (editOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeEdit()">
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xl w-full max-w-lg" (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+        <h3 class="font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">edit</span>
+          Editar usuario
+        </h3>
+        <button type="button" (click)="closeEdit()" class="material-symbols-outlined text-on-surface-variant hover:text-on-surface">close</button>
+      </div>
+
+      <form class="px-6 py-5 space-y-4" (ngSubmit)="saveEdit()">
+        @if (modalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-3 py-2 rounded-lg flex items-center gap-2 text-xs">
+            <span class="material-symbols-outlined text-sm">error</span>
+            {{ modalError() }}
+          </div>
+        }
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Username *</label>
+          <input
+            type="text"
+            name="username"
+            [(ngModel)]="editForm.username"
+            required
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Nombres</label>
+            <input
+              type="text"
+              name="first_name"
+              [(ngModel)]="editForm.first_name"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Apellidos</label>
+            <input
+              type="text"
+              name="last_name"
+              [(ngModel)]="editForm.last_name"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 items-end">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Promedio</label>
+            <input
+              type="number"
+              name="promedio"
+              step="0.01"
+              [(ngModel)]="editForm.promedio"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+          <div class="flex items-center gap-3 h-10">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="disponibilidad" [(ngModel)]="editForm.disponibilidad" class="sr-only peer" />
+              <div
+                class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"
+              ></div>
+              <span class="ms-3 text-sm font-medium text-on-surface">Disponible</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeEdit()"
+            class="px-5 h-10 rounded-md border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container-low transition-all"
+          >Cancelar</button>
+          <button
+            type="submit"
+            [disabled]="saving() || !editForm.username"
+            class="bg-primary text-on-primary px-5 h-10 rounded-md flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (saving()) {
+              <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            } @else {
+              <span class="material-symbols-outlined text-lg">save</span>
+            }
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODAL: Eliminar usuario ══════════ -->
+@if (deleteOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeDelete()">
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="px-6 py-5 text-center space-y-3">
+        <span class="material-symbols-outlined text-5xl text-error">warning</span>
+        <h3 class="font-bold text-on-surface text-lg">¿Eliminar usuario?</h3>
+        <p class="text-sm text-on-surface-variant">
+          Se eliminará permanentemente a
+          <span class="font-bold text-on-surface">{{ deleteTarget()?.username }}</span>
+          y sus asignaciones de rol. Esta acción no se puede deshacer.
+        </p>
+
+        @if (modalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-3 py-2 rounded-lg flex items-center gap-2 text-xs text-left">
+            <span class="material-symbols-outlined text-sm">error</span>
+            {{ modalError() }}
+          </div>
+        }
+
+        <div class="flex justify-center gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeDelete()"
+            class="px-5 h-10 rounded-md border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container-low transition-all"
+          >Cancelar</button>
+          <button
+            type="button"
+            (click)="confirmDelete()"
+            [disabled]="deleting()"
+            class="bg-error text-white px-5 h-10 rounded-md flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            @if (deleting()) {
+              <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            } @else {
+              <span class="material-symbols-outlined text-lg">delete</span>
+            }
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════ MODAL: Asignar rol ══════════ -->
+@if (rolOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeAsignarRol()">
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xl w-full max-w-md" (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+        <h3 class="font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">badge</span>
+          Asignar rol a {{ rolTarget()?.username }}
+        </h3>
+        <button type="button" (click)="closeAsignarRol()" class="material-symbols-outlined text-on-surface-variant hover:text-on-surface">close</button>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+        <!-- Roles actuales -->
+        <div>
+          <div class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">Roles actuales</div>
+          <div class="flex flex-wrap gap-1">
+            @for (r of rolTarget()?.roles; track r.id) {
+              <span class="text-xs px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant font-medium">{{ r.nombre }}</span>
+            } @empty {
+              <span class="text-xs text-on-surface-variant italic">Sin roles asignados</span>
+            }
+          </div>
+        </div>
+
+        @if (rolModalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-3 py-2 rounded-lg flex items-center gap-2 text-xs">
+            <span class="material-symbols-outlined text-sm">error</span>
+            {{ rolModalError() }}
+          </div>
+        }
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Nuevo rol</label>
+          <select
+            [(ngModel)]="selectedRol"
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          >
+            <option [ngValue]="''">Selecciona un rol...</option>
+            @for (r of rolesDisponibles(); track r.id) {
+              <option [ngValue]="r.id">{{ r.nombre }}</option>
+            }
+          </select>
+          @if (rolesDisponibles().length === 0) {
+            <p class="text-xs text-on-surface-variant italic mt-1">El usuario ya tiene todos los roles existentes.</p>
+          }
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            (click)="closeAsignarRol()"
+            class="px-5 h-10 rounded-md border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container-low transition-all"
+          >Cancelar</button>
+          <button
+            type="button"
+            (click)="confirmAsignarRol()"
+            [disabled]="assigning() || selectedRol === ''"
+            class="bg-primary text-on-primary px-5 h-10 rounded-md flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            @if (assigning()) {
+              <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            } @else {
+              <span class="material-symbols-outlined text-lg">add_moderator</span>
+            }
+            Asignar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

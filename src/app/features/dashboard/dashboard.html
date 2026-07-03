@@ -1,39 +1,53 @@
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-
-  <div class="grid grid-cols-4 gap-4">
-
-    <p-card>
-      <div class="text-center">
-        <i class="pi pi-shopping-cart text-4xl text-blue-500"></i>
-        <h2 class="text-xl font-bold mt-2">Ventas hoy</h2>
-        <p class="text-3xl font-bold text-blue-500">$0</p>
-      </div>
-    </p-card>
-
-    <p-card>
-      <div class="text-center">
-        <i class="pi pi-box text-4xl text-green-500"></i>
-        <h2 class="text-xl font-bold mt-2">Productos</h2>
-        <p class="text-3xl font-bold text-green-500">0</p>
-      </div>
-    </p-card>
-
-    <p-card>
-      <div class="text-center">
-        <i class="pi pi-users text-4xl text-yellow-500"></i>
-        <h2 class="text-xl font-bold mt-2">Clientes</h2>
-        <p class="text-3xl font-bold text-yellow-500">0</p>
-      </div>
-    </p-card>
-
-    <p-card>
-      <div class="text-center">
-        <i class="pi pi-exclamation-triangle text-4xl text-red-500"></i>
-        <h2 class="text-xl font-bold mt-2">Stock bajo</h2>
-        <p class="text-3xl font-bold text-red-500">0</p>
-      </div>
-    </p-card>
-
-  </div>
+<!-- Plantilla mínima (sin diseño). Datos reales de /api/inventario/dashboard/. -->
+<div class="mb-4">
+  <h2 class="text-headline-md font-bold text-on-surface">Dashboard</h2>
+  <p class="text-on-surface-variant text-sm">Resumen de inventario y operaciones.</p>
 </div>
+
+@if (error()) {
+  <p class="text-error text-sm mb-3">{{ error() }}</p>
+}
+
+@if (loading()) {
+  <p class="text-on-surface-variant text-sm">Cargando...</p>
+} @else if (data(); as d) {
+  <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Inventario</h3>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.total_productos | number }}</div>
+      <div class="text-xs text-on-surface-variant">Productos</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.bajo_stock | number }}</div>
+      <div class="text-xs text-on-surface-variant">Bajo stock</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.agotados | number }}</div>
+      <div class="text-xs text-on-surface-variant">Agotados</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.en_mantenimiento | number }}</div>
+      <div class="text-xs text-on-surface-variant">En mantenimiento</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.valor_total_disponible | currency: 'USD' : 'symbol' : '1.2-2' }}</div>
+      <div class="text-xs text-on-surface-variant">Valor disponible</div>
+    </div>
+  </div>
+
+  <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Operaciones</h3>
+  <div class="grid grid-cols-3 gap-3">
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.activas | number }}</div>
+      <div class="text-xs text-on-surface-variant">Activas</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.finalizadas | number }}</div>
+      <div class="text-xs text-on-surface-variant">Finalizadas</div>
+    </div>
+    <div class="border border-outline-variant rounded-lg p-4">
+      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.canceladas | number }}</div>
+      <div class="text-xs text-on-surface-variant">Canceladas</div>
+    </div>
+  </div>
+}

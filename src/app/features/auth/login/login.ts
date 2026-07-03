@@ -2,24 +2,22 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { CardModule } from 'primeng/card';
-import { AuthService } from '../../../core/services/auth.service'; // ← ruta correcta
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ButtonModule, InputTextModule, ToastModule, CardModule],
+  imports: [CommonModule, ReactiveFormsModule, ToastModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
-  providers: [MessageService]  // ← quitar AuthService de aquí
+  providers: [MessageService]
 })
 export class Login {
   form: FormGroup;
   loading = false;
+  showPassword = false;
 
   constructor(
     private fb: FormBuilder,
@@ -28,9 +26,13 @@ export class Login {
     private messageService: MessageService
   ) {
     this.form = this.fb.group({
-      username: ['', [Validators.required]],       // ← username, no email
+      username: ['', [Validators.required]],
       password: ['', [Validators.required, Validators.minLength(5)]]
     });
+  }
+
+  togglePassword(): void {
+    this.showPassword = !this.showPassword;
   }
 
   submit(): void {
@@ -54,8 +56,8 @@ export class Login {
           detail: 'Sesión iniciada correctamente'
         });
         setTimeout(() => {
-          this.router.navigate(['/dashboard']); // ← redirige al dashboard
-        }, );
+          this.router.navigate(['/dashboard']);
+        });
       },
       error: (error) => {
         this.loading = false;
@@ -81,7 +83,7 @@ export class Login {
   getFieldError(fieldName: string): string {
     const field = this.form.get(fieldName);
     if (field?.errors && field?.touched) {
-      if (field.errors['required']) return `${fieldName} es requerido`;
+      if (field.errors['required']) return `Este campo es requerido`;
       if (field.errors['minlength']) return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
     }
     return '';

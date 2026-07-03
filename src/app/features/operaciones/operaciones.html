@@ -1,0 +1,428 @@
+<!-- Encabezado de acciones -->
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-on-surface">Operaciones</h2>
+    <p class="text-on-surface-variant text-sm mt-1">Ventas y préstamos de productos.</p>
+  </div>
+  <button
+    type="button"
+    (click)="abrirForm()"
+    class="bg-primary text-on-primary px-6 h-12 rounded-md flex items-center justify-center gap-2 font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+  >
+    <span class="material-symbols-outlined">add_shopping_cart</span>
+    Nueva Operación
+  </button>
+</div>
+
+<!-- Mensajes -->
+@if (successMsg()) {
+  <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">check_circle</span>
+    {{ successMsg() }}
+  </div>
+}
+@if (error()) {
+  <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">error</span>
+    {{ error() }}
+  </div>
+}
+
+<!-- Filtros -->
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo</label>
+      <select
+        [(ngModel)]="tipoFilter"
+        (ngModelChange)="applyFilters()"
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+      >
+        <option [ngValue]="''">Todos los tipos</option>
+        @for (t of tipos; track t) {
+          <option [ngValue]="t">{{ tipoLabel(t) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
+      <select
+        [(ngModel)]="estadoFilter"
+        (ngModelChange)="applyFilters()"
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary capitalize"
+      >
+        <option [ngValue]="''">Todos los estados</option>
+        @for (e of estados; track e) {
+          <option [ngValue]="e" class="capitalize">{{ e }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Buscar</label>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (keyup.enter)="applyFilters()"
+        placeholder="Código o cliente..."
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+      />
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="applyFilters()"
+        class="bg-primary/10 text-primary font-bold text-sm px-4 h-10 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors"
+      >
+        <span class="material-symbols-outlined text-lg">search</span>
+        Filtrar
+      </button>
+      <button
+        type="button"
+        (click)="clearFilters()"
+        class="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
+      >
+        <span class="material-symbols-outlined text-lg">filter_list_off</span>
+        Limpiar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+  <div class="overflow-x-auto custom-scrollbar">
+    <table class="w-full text-left border-collapse min-w-[1000px]">
+      <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
+        <tr>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Código</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Tipo</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Estado</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Cliente</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Fecha</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Total</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        @if (loading()) {
+          <tr>
+            <td colspan="7" class="px-6 py-16 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-4xl animate-spin block mb-2">progress_activity</span>
+              Cargando operaciones...
+            </td>
+          </tr>
+        } @else {
+          @for (op of operaciones(); track op.id) {
+            <tr class="hover:bg-surface-container-low transition-colors">
+              <td class="px-6 py-4">
+                <span class="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{{ op.codigo_operacion }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-xs font-bold px-2 py-1 rounded-full border" [ngClass]="tipoChipClass(op.tipo_operacion)">{{ tipoLabel(op.tipo_operacion) }}</span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-xs font-bold px-2 py-1 rounded-full border capitalize" [ngClass]="estadoChipClass(op.estado)">{{ op.estado }}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-on-surface">{{ op.cliente || '—' }}</td>
+              <td class="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">{{ op.fecha_operacion }}</td>
+              <td class="px-6 py-4 font-bold text-on-surface whitespace-nowrap">{{ op.total | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button type="button" (click)="verDetalle(op)" title="Ver detalle"
+                    class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors">
+                    <span class="material-symbols-outlined text-xl">visibility</span>
+                  </button>
+                  @if (op.estado === 'activa') {
+                    <button type="button" (click)="finalizar(op)" [disabled]="accionEnCurso() === op.id" title="Finalizar"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-green-700 hover:bg-green-100 transition-colors disabled:opacity-40">
+                      <span class="material-symbols-outlined text-xl">task_alt</span>
+                    </button>
+                    <button type="button" (click)="cancelar(op)" [disabled]="accionEnCurso() === op.id" title="Cancelar"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors disabled:opacity-40">
+                      <span class="material-symbols-outlined text-xl">cancel</span>
+                    </button>
+                  } @else {
+                    <button type="button" (click)="eliminar(op)" [disabled]="accionEnCurso() === op.id" title="Eliminar"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors disabled:opacity-40">
+                      <span class="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-4xl text-outline block mb-2">receipt_long</span>
+                No se encontraron operaciones con los filtros aplicados.
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  <div class="bg-surface-container-low px-6 py-3 flex items-center justify-between border-t border-outline-variant">
+    <span class="text-xs text-on-surface-variant">Mostrando {{ rangeStart() }} a {{ rangeEnd() }} de {{ count() }} operaciones</span>
+    <div class="flex items-center gap-2">
+      <button type="button" (click)="goToPage(page() - 1)" [disabled]="page() === 1"
+        class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined text-sm">chevron_left</span>
+      </button>
+      @for (n of pages(); track n) {
+        <button type="button" (click)="goToPage(n)"
+          [ngClass]="n === page() ? 'border-primary bg-primary text-on-primary font-bold' : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container'"
+          class="w-8 h-8 flex items-center justify-center rounded border text-xs transition-all">{{ n }}</button>
+      }
+      <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()"
+        class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+        <span class="material-symbols-outlined text-sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL DETALLE ══════════════ -->
+@if (detalleOp(); as op) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="cerrarDetalle()">
+    <div class="bg-surface-container-lowest w-full max-w-3xl rounded-xl border border-outline-variant shadow-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary text-2xl">receipt_long</span>
+          <div>
+            <h3 class="text-lg font-bold text-on-surface">{{ op.codigo_operacion }}</h3>
+            <p class="text-xs text-on-surface-variant">
+              <span class="capitalize">{{ tipoLabel(op.tipo_operacion) }}</span> · <span class="capitalize">{{ op.estado }}</span>
+            </p>
+          </div>
+        </div>
+        <button type="button" (click)="cerrarDetalle()" class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto custom-scrollbar px-6 py-5 space-y-5">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div><div class="text-xs font-bold text-on-surface-variant uppercase">Cliente</div><div class="text-on-surface">{{ op.cliente || '—' }}</div></div>
+          <div><div class="text-xs font-bold text-on-surface-variant uppercase">Responsable</div><div class="text-on-surface">{{ op.usuario_nombre }}</div></div>
+          <div><div class="text-xs font-bold text-on-surface-variant uppercase">Fecha</div><div class="text-on-surface">{{ op.fecha_operacion }}</div></div>
+          <div><div class="text-xs font-bold text-on-surface-variant uppercase">Devolución</div><div class="text-on-surface">{{ op.fecha_devolucion || '—' }}</div></div>
+        </div>
+        @if (op.observaciones) {
+          <div class="text-sm"><div class="text-xs font-bold text-on-surface-variant uppercase">Observaciones</div><div class="text-on-surface">{{ op.observaciones }}</div></div>
+        }
+
+        <div class="border border-outline-variant rounded-lg overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-surface-container-low text-on-surface-variant">
+              <tr>
+                <th class="px-4 py-2 font-bold text-xs uppercase">Producto</th>
+                <th class="px-4 py-2 font-bold text-xs uppercase text-center">Cant.</th>
+                <th class="px-4 py-2 font-bold text-xs uppercase text-center">Devuelto</th>
+                <th class="px-4 py-2 font-bold text-xs uppercase text-right">Precio</th>
+                <th class="px-4 py-2 font-bold text-xs uppercase text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant">
+              @for (d of op.detalles; track d.id) {
+                <tr>
+                  <td class="px-4 py-2">
+                    <div class="text-on-surface font-medium">{{ d.producto_nombre }}</div>
+                    <div class="font-mono text-xs text-on-surface-variant">{{ d.producto_codigo }}</div>
+                  </td>
+                  <td class="px-4 py-2 text-center text-on-surface">{{ d.cantidad }}</td>
+                  <td class="px-4 py-2 text-center text-on-surface-variant">{{ d.cantidad_devuelta }} / {{ d.cantidad }}</td>
+                  <td class="px-4 py-2 text-right text-on-surface">{{ d.precio_unitario | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                  <td class="px-4 py-2 text-right font-bold text-on-surface">{{ d.subtotal | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="bg-surface-container-low">
+                <td colspan="4" class="px-4 py-2 text-right font-bold text-on-surface-variant uppercase text-xs">Total</td>
+                <td class="px-4 py-2 text-right font-bold text-on-surface">{{ op.total | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      @if (op.estado === 'activa') {
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-outline-variant">
+          <button type="button" (click)="cancelar(op)" [disabled]="accionEnCurso() === op.id"
+            class="px-5 h-10 rounded-lg border border-error text-error font-bold text-sm hover:bg-error-container/30 transition-colors disabled:opacity-40">Cancelar operación</button>
+          <button type="button" (click)="finalizar(op)" [disabled]="accionEnCurso() === op.id"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 transition-all disabled:opacity-60">
+            <span class="material-symbols-outlined text-lg">task_alt</span>Finalizar</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ══════════════ MODAL NUEVA OPERACIÓN ══════════════ -->
+@if (showForm()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="cerrarForm()">
+    <div class="bg-surface-container-lowest w-full max-w-3xl rounded-xl border border-outline-variant shadow-lg max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary text-2xl">add_shopping_cart</span>
+          <h3 class="text-lg font-bold text-on-surface">Nueva Operación</h3>
+        </div>
+        <button type="button" (click)="cerrarForm()" class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto custom-scrollbar px-6 py-5 space-y-5">
+        @if (formError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ formError() }}</span>
+          </div>
+        }
+
+        <!-- Cabecera -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo *</label>
+            <select [(ngModel)]="formTipo" (ngModelChange)="onTipoChange()"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary">
+              <option [ngValue]="'venta'">Venta</option>
+              <option [ngValue]="'prestamo'">Préstamo</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Cliente</label>
+            <input type="text" [(ngModel)]="formCliente" maxlength="150" placeholder="Nombre del cliente"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary" />
+          </div>
+          @if (formTipo === 'prestamo') {
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Fecha devolución *</label>
+              <input type="date" [(ngModel)]="formFechaDevolucion"
+                class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary" />
+            </div>
+          }
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Observaciones</label>
+          <textarea [(ngModel)]="formObservaciones" rows="2" placeholder="Notas de la operación..."
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-y"></textarea>
+        </div>
+
+        <!-- Buscador de productos -->
+        <div class="border border-outline-variant rounded-lg p-4 space-y-3">
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Añadir productos</label>
+          <div class="flex gap-2">
+            <input type="text" [(ngModel)]="productoSearch" (keyup.enter)="buscarProductos()" placeholder="Buscar por nombre o código..."
+              class="flex-1 bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary" />
+            <button type="button" (click)="buscarProductos()"
+              class="bg-primary/10 text-primary font-bold text-sm px-4 h-10 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors">
+              <span class="material-symbols-outlined text-lg">search</span>Buscar
+            </button>
+          </div>
+
+          @if (buscandoProductos()) {
+            <p class="text-sm text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>Buscando...
+            </p>
+          } @else if (busquedaRealizada() && productoResultados().length === 0) {
+            <p class="text-sm text-on-surface-variant">Sin resultados.</p>
+          } @else if (productoResultados().length) {
+            <div class="max-h-40 overflow-y-auto custom-scrollbar divide-y divide-outline-variant border border-outline-variant rounded-lg">
+              @for (p of productoResultados(); track p.prod_id) {
+                <div class="flex items-center justify-between px-3 py-2 text-sm">
+                  <div>
+                    <div class="text-on-surface font-medium">{{ p.prod_nombre }}</div>
+                    <div class="text-xs text-on-surface-variant">
+                      <span class="font-mono">{{ p.codigo_producto }}</span> · Disp: {{ p.prod_cantidad_disponible }} · {{ p.prod_valor_unitario | currency: 'USD' : 'symbol' : '1.2-2' }}
+                    </div>
+                  </div>
+                  <button type="button" (click)="agregarLinea(p)" [disabled]="yaAgregado(p.prod_id) || p.prod_cantidad_disponible === 0"
+                    class="text-primary font-bold text-xs flex items-center gap-1 hover:underline disabled:opacity-40 disabled:no-underline">
+                    <span class="material-symbols-outlined text-base">add_circle</span>
+                    {{ yaAgregado(p.prod_id) ? 'Agregado' : 'Agregar' }}
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Líneas -->
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Líneas de la operación</label>
+          @if (lineas().length === 0) {
+            <p class="text-sm text-on-surface-variant mt-2 border border-dashed border-outline-variant rounded-lg px-3 py-4 text-center">
+              Aún no has añadido productos.
+            </p>
+          } @else {
+            <div class="mt-2 border border-outline-variant rounded-lg overflow-hidden">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-surface-container-low text-on-surface-variant">
+                  <tr>
+                    <th class="px-3 py-2 font-bold text-xs uppercase">Producto</th>
+                    <th class="px-3 py-2 font-bold text-xs uppercase w-24 text-center">Cant.</th>
+                    <th class="px-3 py-2 font-bold text-xs uppercase w-32 text-right">Precio</th>
+                    <th class="px-3 py-2 font-bold text-xs uppercase w-28 text-right">Subtotal</th>
+                    <th class="px-3 py-2 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant">
+                  @for (l of lineas(); track l.producto; let i = $index) {
+                    <tr>
+                      <td class="px-3 py-2">
+                        <div class="text-on-surface font-medium">{{ l.producto_nombre }}</div>
+                        <div class="font-mono text-xs text-on-surface-variant">{{ l.codigo_producto }} · Disp: {{ l.disponible }}</div>
+                      </td>
+                      <td class="px-3 py-2">
+                        <input type="number" [(ngModel)]="l.cantidad" [name]="'cant' + i" min="1" [max]="l.disponible"
+                          class="w-full bg-surface-container-low border border-outline-variant rounded h-9 px-2 text-sm text-center text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input type="number" [(ngModel)]="l.precio_unitario" [name]="'precio' + i" min="0" step="0.01"
+                          class="w-full bg-surface-container-low border border-outline-variant rounded h-9 px-2 text-sm text-right text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+                      </td>
+                      <td class="px-3 py-2 text-right font-bold text-on-surface">{{ l.cantidad * (+l.precio_unitario || 0) | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                      <td class="px-3 py-2 text-center">
+                        <button type="button" (click)="quitarLinea(i)" class="text-on-surface-variant hover:text-error transition-colors">
+                          <span class="material-symbols-outlined text-lg">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="bg-surface-container-low">
+                    <td colspan="3" class="px-3 py-2 text-right font-bold text-on-surface-variant uppercase text-xs">Total estimado</td>
+                    <td class="px-3 py-2 text-right font-bold text-on-surface">{{ formTotal() | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-outline-variant">
+        <button type="button" (click)="cerrarForm()" [disabled]="saving()"
+          class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Cancelar</button>
+        <button type="button" (click)="guardar()" [disabled]="saving()"
+          class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-60">
+          @if (saving()) {
+            <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando...
+          } @else {
+            <span class="material-symbols-outlined text-lg">save</span>Registrar Operación
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

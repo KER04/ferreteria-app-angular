@@ -1,3 +1,42 @@
-<div class="card flex justify-center">
-    <p-panelmenu [model]="items" class="w-full md:w-80" />
-</div>
+<aside class="sticky top-0 h-screen w-[280px] shrink-0 bg-inverse-surface text-inverse-on-surface flex flex-col">
+
+  <!-- Marca -->
+  <div class="px-6 py-5 border-b border-white/10">
+    <h1 class="text-lg font-extrabold text-white tracking-tight">Ferretex Pro</h1>
+    <p class="text-xs text-inverse-on-surface/60 mt-0.5">Gestión de Inventario</p>
+  </div>
+
+  <!-- Navegación -->
+  <nav class="flex-1 py-4 overflow-y-auto">
+    <ul class="space-y-1 px-3">
+      @for (item of nav; track item.route) {
+        <li>
+          <a
+            [routerLink]="item.route"
+            routerLinkActive
+            #rla="routerLinkActive"
+            [ngClass]="rla.isActive
+              ? 'bg-white/10 text-white border-primary-fixed-dim font-semibold'
+              : 'text-inverse-on-surface/60 border-transparent hover:bg-white/5 hover:text-white'"
+            class="flex items-center gap-3 h-12 pl-4 pr-3 border-l-4 rounded-sm transition-colors"
+          >
+            <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+            <span class="text-label-md">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <!-- Cerrar sesión -->
+  <div class="p-3 border-t border-white/10">
+    <button
+      type="button"
+      (click)="logout()"
+      class="w-full flex items-center gap-3 h-12 px-4 rounded-sm text-inverse-on-surface/70 hover:bg-white/5 hover:text-white transition-colors"
+    >
+      <span class="material-symbols-outlined text-[22px]">logout</span>
+      <span class="text-label-md">Cerrar Sesión</span>
+    </button>
+  </div>
+</aside>

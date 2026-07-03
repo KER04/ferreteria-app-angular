@@ -1,0 +1,621 @@
+<!-- Encabezado de acciones -->
+<div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-on-surface">Inventario Maestro</h2>
+    <p class="text-on-surface-variant text-sm mt-1">
+      Control centralizado de herramientas y materiales industriales.
+    </p>
+  </div>
+  <button
+    type="button"
+    (click)="openCreate()"
+    class="bg-primary text-on-primary px-6 h-12 rounded-md flex items-center justify-center gap-2 font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+  >
+    <span class="material-symbols-outlined">add_box</span>
+    Añadir Producto
+  </button>
+</div>
+
+<!-- Barra de filtros -->
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6">
+  <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+    <!-- Marca -->
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Marca</label>
+      <select
+        [(ngModel)]="brandFilter"
+        (ngModelChange)="applyFilters()"
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+      >
+        <option [ngValue]="''">Todas las marcas</option>
+        @for (m of marcas(); track m.marca_id) {
+          <option [ngValue]="m.marca_id">{{ m.marca_nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Categoría -->
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Categoría</label>
+      <select
+        [(ngModel)]="categoryFilter"
+        (ngModelChange)="applyFilters()"
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+      >
+        <option [ngValue]="''">Todas las categorías</option>
+        @for (c of categorias(); track c.tipr_id) {
+          <option [ngValue]="c.tipr_id">{{ c.tipr_nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Estado -->
+    <div class="space-y-1">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
+      <select
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="applyFilters()"
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+      >
+        <option [ngValue]="''">Todos los estados</option>
+        @for (e of estados; track e) {
+          <option [ngValue]="e">{{ e }}</option>
+        }
+      </select>
+    </div>
+
+    <!-- Solo Stock Bajo -->
+    <div class="flex items-center gap-3 h-10">
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" [(ngModel)]="onlyLowStock" (ngModelChange)="applyFilters()" class="sr-only peer" />
+        <div
+          class="w-11 h-6 bg-outline-variant rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"
+        ></div>
+        <span class="ms-3 text-sm font-medium text-on-surface">Solo Stock Bajo</span>
+      </label>
+    </div>
+
+    <!-- Limpiar filtros -->
+    <div class="flex justify-end">
+      <button
+        type="button"
+        (click)="clearFilters()"
+        class="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
+      >
+        <span class="material-symbols-outlined text-lg">filter_list_off</span>
+        Limpiar Filtros
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje de error -->
+@if (error()) {
+  <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-6 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">error</span>
+    {{ error() }}
+  </div>
+}
+
+<!-- Tabla de inventario -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+  <div class="overflow-x-auto custom-scrollbar">
+    <table class="w-full text-left border-collapse min-w-[1000px]">
+      <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
+        <tr>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Código</th>
+          <th class="px-4 py-4 font-bold text-xs uppercase tracking-widest">Foto</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Producto / Modelo</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Categoría</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Precio Unit.</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center">Segmentación de Stock</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-outline-variant">
+        @if (loading()) {
+          <tr>
+            <td colspan="7" class="px-6 py-16 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-4xl animate-spin block mb-2">progress_activity</span>
+              Cargando productos...
+            </td>
+          </tr>
+        } @else {
+          @for (p of productos(); track p.prod_id) {
+            <tr
+              [ngClass]="p.bajo_stock
+                ? 'bg-error-container/10 hover:bg-error-container/20'
+                : 'hover:bg-surface-container-low'"
+              class="transition-colors"
+            >
+              <!-- Código -->
+              <td class="px-6 py-4">
+                <span class="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{{ p.codigo_producto }}</span>
+              </td>
+
+              <!-- Foto -->
+              <td class="px-4 py-4">
+                <div class="w-12 h-12 bg-surface-container rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center">
+                  @if (p.prod_foto_url) {
+                    <img [src]="p.prod_foto_url" [alt]="p.prod_nombre" (error)="p.prod_foto_url = null" class="w-full h-full object-cover" />
+                  } @else {
+                    <span class="material-symbols-outlined text-outline">imagesmode</span>
+                  }
+                </div>
+              </td>
+
+              <!-- Producto / Modelo -->
+              <td class="px-6 py-4">
+                <div class="font-bold text-on-surface">{{ p.prod_nombre }}</div>
+                <div class="text-xs text-on-surface-variant">{{ p.prod_modelo || p.marca_nombre }}</div>
+              </td>
+
+              <!-- Categoría -->
+              <td class="px-6 py-4">
+                <span class="text-sm px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant font-medium">{{ p.tipo_categoria_nombre }}</span>
+              </td>
+
+              <!-- Precio -->
+              <td class="px-6 py-4 font-bold text-on-surface whitespace-nowrap">{{ p.prod_valor_unitario | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+
+              <!-- Segmentación de stock -->
+              <td class="px-6 py-4">
+                <div class="flex justify-center gap-2">
+                  <div class="flex flex-col items-center relative">
+                    <span class="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">{{ p.prod_cantidad_disponible }}</span>
+                    <span class="text-[9px] uppercase mt-1 opacity-60">Disp.</span>
+                    @if (p.bajo_stock) {
+                      <span class="material-symbols-outlined text-error text-xs absolute -top-1 -right-1" style="font-variation-settings: 'FILL' 1;">warning</span>
+                    }
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">{{ p.prod_cantidad_prestada }}</span>
+                    <span class="text-[9px] uppercase mt-1 opacity-60">Pres.</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <span class="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-200">{{ p.prod_cantidad_en_mantenimiento }}</span>
+                    <span class="text-[9px] uppercase mt-1 opacity-60">Mant.</span>
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <span class="bg-inverse-surface text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{{ p.prod_cantidad_total }}</span>
+                    <span class="text-[9px] uppercase mt-1 opacity-60 font-bold">Total</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Acciones -->
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    (click)="openEdit(p)"
+                    title="Editar producto"
+                    class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <span class="material-symbols-outlined text-xl">edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="askDelete(p)"
+                    title="Eliminar producto"
+                    class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors"
+                  >
+                    <span class="material-symbols-outlined text-xl">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+                <span class="material-symbols-outlined text-4xl text-outline block mb-2">search_off</span>
+                No se encontraron productos con los filtros aplicados.
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación / pie de tabla -->
+  <div class="bg-surface-container-low px-6 py-3 flex items-center justify-between border-t border-outline-variant">
+    <span class="text-xs text-on-surface-variant">Mostrando {{ rangeStart() }} a {{ rangeEnd() }} de {{ count() }} productos</span>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        (click)="goToPage(page() - 1)"
+        [disabled]="page() === 1"
+        class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <span class="material-symbols-outlined text-sm">chevron_left</span>
+      </button>
+
+      @for (n of pages(); track n) {
+        <button
+          type="button"
+          (click)="goToPage(n)"
+          [ngClass]="n === page()
+            ? 'border-primary bg-primary text-on-primary font-bold'
+            : 'border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container'"
+          class="w-8 h-8 flex items-center justify-center rounded border text-xs transition-all"
+        >{{ n }}</button>
+      }
+
+      <button
+        type="button"
+        (click)="goToPage(page() + 1)"
+        [disabled]="page() === totalPages()"
+        class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <span class="material-symbols-outlined text-sm">chevron_right</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- KPIs inferiores -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+  <div class="bg-primary-container text-on-primary-container p-6 rounded-xl border border-primary shadow-sm flex items-center gap-4">
+    <div class="w-12 h-12 rounded-lg bg-on-primary-container/20 flex items-center justify-center">
+      <span class="material-symbols-outlined text-3xl">warning</span>
+    </div>
+    <div>
+      <div class="text-3xl font-bold">{{ dashboard()?.bajo_stock ?? 0 }}</div>
+      <div class="text-xs uppercase font-bold tracking-widest opacity-80">Alertas Stock Bajo</div>
+    </div>
+  </div>
+
+  <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
+    <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center">
+      <span class="material-symbols-outlined text-3xl">engineering</span>
+    </div>
+    <div>
+      <div class="text-3xl font-bold text-on-surface">{{ dashboard()?.en_mantenimiento ?? 0 }}</div>
+      <div class="text-xs uppercase font-bold tracking-widest text-on-surface-variant">En Mantenimiento</div>
+    </div>
+  </div>
+
+  <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
+    <div class="w-12 h-12 rounded-lg bg-green-100 text-green-800 flex items-center justify-center">
+      <span class="material-symbols-outlined text-3xl">inventory_2</span>
+    </div>
+    <div>
+      <div class="text-3xl font-bold text-on-surface">{{ (dashboard()?.total_productos ?? 0) | number }}</div>
+      <div class="text-xs uppercase font-bold tracking-widest text-on-surface-variant">Items Totales</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CREAR / EDITAR PRODUCTO ══════════════ -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeModal()">
+    <div
+      class="bg-surface-container-lowest w-full max-w-3xl rounded-xl border border-outline-variant shadow-lg max-h-[90vh] flex flex-col"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Encabezado del modal -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary text-2xl">{{ editing() ? 'edit_square' : 'add_box' }}</span>
+          <div>
+            <h3 class="text-lg font-bold text-on-surface">{{ editing() ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
+            @if (editing(); as e) {
+              <p class="text-xs text-on-surface-variant font-mono">{{ e.codigo_producto }}</p>
+            }
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="closeModal()"
+          class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Cuerpo del formulario -->
+      <form class="overflow-y-auto custom-scrollbar px-6 py-5 space-y-5" (ngSubmit)="saveProducto()">
+        @if (formError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span>
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Nombre -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Nombre *</label>
+            <input
+              type="text"
+              name="prod_nombre"
+              [(ngModel)]="form.prod_nombre"
+              maxlength="100"
+              required
+              placeholder="Ej. Taladro percutor"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Modelo -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Modelo</label>
+            <input
+              type="text"
+              name="prod_modelo"
+              [(ngModel)]="form.prod_modelo"
+              maxlength="100"
+              placeholder="Ej. GSB 13 RE"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Descripción -->
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Descripción</label>
+            <textarea
+              name="descripcion"
+              [(ngModel)]="form.descripcion"
+              rows="2"
+              placeholder="Detalles del producto..."
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary resize-y"
+            ></textarea>
+          </div>
+
+          <!-- Proveedor -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Proveedor</label>
+            <input
+              type="text"
+              name="proveedor"
+              [(ngModel)]="form.proveedor"
+              maxlength="100"
+              placeholder="Ej. Distribuidora Central"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Valor unitario -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Valor Unitario *</label>
+            <input
+              type="number"
+              name="prod_valor_unitario"
+              [(ngModel)]="form.prod_valor_unitario"
+              min="0"
+              step="0.01"
+              required
+              placeholder="0.00"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Marca -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Marca *</label>
+            <select
+              name="marca"
+              [(ngModel)]="form.marca"
+              required
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              <option [ngValue]="''" disabled>Selecciona una marca</option>
+              @for (m of marcas(); track m.marca_id) {
+                <option [ngValue]="m.marca_id">{{ m.marca_nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Categoría -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Categoría *</label>
+            <select
+              name="tipo_categoria"
+              [(ngModel)]="form.tipo_categoria"
+              required
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              <option [ngValue]="''" disabled>Selecciona una categoría</option>
+              @for (c of categorias(); track c.tipr_id) {
+                <option [ngValue]="c.tipr_id">{{ c.tipr_nombre }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Préstamo -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo de Préstamo *</label>
+            <select
+              name="prestamo"
+              [(ngModel)]="form.prestamo"
+              required
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              <option [ngValue]="''" disabled>Selecciona un tipo de préstamo</option>
+              @for (pr of prestamos(); track pr.pres_id) {
+                <option [ngValue]="pr.pres_id">{{ pr.pres_nombre }} ({{ pr.tipo_prestamo }})</option>
+              }
+            </select>
+          </div>
+
+          <!-- Tipo de operación -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Operación Permitida *</label>
+            <select
+              name="tipo_operacion_permitida"
+              [(ngModel)]="form.tipo_operacion_permitida"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              @for (t of tiposOperacion; track t.value) {
+                <option [ngValue]="t.value">{{ t.label }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Estado -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado *</label>
+            <select
+              name="prod_estado"
+              [(ngModel)]="form.prod_estado"
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              @for (e of estados; track e) {
+                <option [ngValue]="e">{{ e }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Cantidad disponible -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Cantidad Disponible *</label>
+            <input
+              type="number"
+              name="prod_cantidad_disponible"
+              [(ngModel)]="form.prod_cantidad_disponible"
+              min="0"
+              step="1"
+              required
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Stock mínimo -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Stock Mínimo *</label>
+            <input
+              type="number"
+              name="prod_stock_minimo"
+              [(ngModel)]="form.prod_stock_minimo"
+              min="0"
+              step="1"
+              required
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+
+          <!-- Foto (opcional) -->
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Foto (opcional)</label>
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 bg-surface-container rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                @if (fotoPreview()) {
+                  <img [src]="fotoPreview()" alt="Vista previa" class="w-full h-full object-cover" />
+                } @else {
+                  <span class="material-symbols-outlined text-outline">imagesmode</span>
+                }
+              </div>
+              <div class="flex-1 space-y-1">
+                <input
+                  #fotoInput
+                  type="file"
+                  name="prod_foto"
+                  accept="image/*"
+                  (change)="onFotoChange($event)"
+                  class="block w-full text-sm text-on-surface-variant file:mr-3 file:px-4 file:h-9 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-bold file:cursor-pointer hover:file:bg-primary/20 file:transition-colors"
+                />
+                <div class="flex items-center gap-3">
+                  <p class="text-[11px] text-on-surface-variant">
+                    Si no eliges archivo, se envía sin foto (JSON). Al editar, la foto actual se conserva.
+                  </p>
+                  @if (fotoFile) {
+                    <button
+                      type="button"
+                      (click)="quitarFoto(fotoInput)"
+                      class="text-error text-xs font-bold hover:underline whitespace-nowrap"
+                    >
+                      Quitar archivo
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pie del modal -->
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-outline-variant -mx-6 px-6 pb-1 mt-4 pt-4">
+          <button
+            type="button"
+            (click)="closeModal()"
+            [disabled]="saving()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="saving()"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:active:scale-100"
+          >
+            @if (saving()) {
+              <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+              Guardando...
+            } @else {
+              <span class="material-symbols-outlined text-lg">save</span>
+              {{ editing() ? 'Guardar Cambios' : 'Crear Producto' }}
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ MODAL CONFIRMAR ELIMINACIÓN ══════════════ -->
+@if (productoAEliminar(); as pd) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="cancelDelete()">
+    <div
+      class="bg-surface-container-lowest w-full max-w-md rounded-xl border border-outline-variant shadow-lg p-6"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full bg-error-container/60 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-error text-2xl">delete_forever</span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-on-surface">Eliminar producto</h3>
+          <p class="text-sm text-on-surface-variant mt-1">
+            ¿Seguro que deseas eliminar
+            <span class="font-bold text-on-surface">{{ pd.prod_nombre }}</span>
+            <span class="font-mono text-xs">({{ pd.codigo_producto }})</span>?
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+      </div>
+
+      @if (deleteError()) {
+        <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mt-4 flex items-start gap-2 text-sm">
+          <span class="material-symbols-outlined text-lg">error</span>
+          <span>{{ deleteError() }}</span>
+        </div>
+      }
+
+      <div class="flex items-center justify-end gap-3 mt-6">
+        <button
+          type="button"
+          (click)="cancelDelete()"
+          [disabled]="deleting()"
+          class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmDelete()"
+          [disabled]="deleting()"
+          class="bg-error text-on-error px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-60 disabled:active:scale-100"
+        >
+          @if (deleting()) {
+            <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+            Eliminando...
+          } @else {
+            <span class="material-symbols-outlined text-lg">delete</span>
+            Eliminar
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

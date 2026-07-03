@@ -1,24 +1,14 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
-import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [ButtonModule],
+  imports: [CommonModule],
   templateUrl: './header.html',
 })
 export class Header {
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
-  logout(): void {
-    this.authService.logout().subscribe({
-      next: () => this.router.navigate(['/login']),
-      error: () => this.router.navigate(['/login']) // redirige igual si hay error
-    });
-  }
+  private authService = inject(AuthService);
+  user$ = this.authService.user$;
 }

@@ -1,12 +1,39 @@
-<div class="w-full flex items-center justify-between px-6">
-  <span class="text-lg font-bold text-gray-700">
-    🔧 Ferretería
-  </span>
-  <button
-    pButton
-    icon="pi pi-sign-out"
-    label="Cerrar sesión"
-    class="p-button-danger p-button-text"
-    (click)="logout()"
-  ></button>
-</div>
+<header class="sticky top-0 z-20 h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between gap-4 px-6">
+
+  <!-- Búsqueda -->
+  <div class="relative w-full max-w-md">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <span class="material-symbols-outlined text-outline text-[20px]">search</span>
+    </div>
+    <input
+      type="text"
+      placeholder="Buscar productos, SKU o ventas..."
+      class="w-full h-10 pl-10 pr-3 bg-surface-container border border-transparent rounded-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 outline-none transition-colors focus:border-primary focus:bg-surface-container-lowest"
+    />
+  </div>
+
+  <!-- Acciones -->
+  <div class="flex items-center gap-2 sm:gap-4">
+    <button
+      type="button"
+      aria-label="Notificaciones"
+      class="relative w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
+    >
+      <span class="material-symbols-outlined text-[22px]">notifications</span>
+      <span class="absolute top-2 right-2 w-2 h-2 bg-secondary-container rounded-full ring-2 ring-surface-container-lowest"></span>
+    </button>
+
+    <button
+      type="button"
+      aria-label="Cuenta"
+      class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
+    >
+      <span class="material-symbols-outlined text-[24px]">account_circle</span>
+    </button>
+
+    <div class="hidden sm:flex flex-col items-end leading-tight pl-1">
+      <span class="text-sm font-bold text-on-surface">{{ (user$ | async)?.username || 'Admin' }}</span>
+      <span class="text-[10px] font-semibold uppercase tracking-wider text-primary">Superuser</span>
+    </div>
+  </div>
+</header>

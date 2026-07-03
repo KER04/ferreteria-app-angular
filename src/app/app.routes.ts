@@ -25,7 +25,73 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard)
       },
-      // Aquí irán las demás rutas: inventario, ventas, clientes...
+      // ── Inventario ──────────────────────────────
+      {
+        path: 'inventario',
+        loadComponent: () => import('./features/inventario/inventario').then(m => m.Inventario)
+      },
+      {
+        path: 'inventario/marcas',
+        loadComponent: () => import('./features/inventario/marcas/marcas').then(m => m.Marcas)
+      },
+      {
+        path: 'inventario/categorias',
+        loadComponent: () => import('./features/inventario/categorias/categorias').then(m => m.Categorias)
+      },
+      {
+        path: 'inventario/prestamos',
+        loadComponent: () => import('./features/inventario/prestamos/prestamos').then(m => m.Prestamos)
+      },
+
+      // ── Operaciones (Ventas / Préstamos) ─────────
+      {
+        path: 'ventas',
+        loadComponent: () => import('./features/operaciones/operaciones').then(m => m.Operaciones)
+      },
+      {
+        path: 'devoluciones',
+        loadComponent: () => import('./features/operaciones/devoluciones/devoluciones').then(m => m.OperacionesDevoluciones)
+      },
+      {
+        path: 'ventas/vencidos',
+        loadComponent: () => import('./features/operaciones/vencidos/vencidos').then(m => m.OperacionesVencidos)
+      },
+
+      // ── Mantenimiento ───────────────────────────
+      {
+        path: 'mantenimiento',
+        loadComponent: () => import('./features/mantenimiento/registros/registros').then(m => m.MantenimientoRegistros)
+      },
+      {
+        path: 'mantenimiento/tipos',
+        loadComponent: () => import('./features/mantenimiento/tipos/tipos').then(m => m.MantenimientoTipos)
+      },
+      {
+        path: 'mantenimiento/costos',
+        loadComponent: () => import('./features/mantenimiento/costos/costos').then(m => m.MantenimientoCostos)
+      },
+      {
+        path: 'mantenimiento/salidas',
+        loadComponent: () => import('./features/mantenimiento/salidas/salidas').then(m => m.MantenimientoSalidas)
+      },
+
+      // ── Administración ──────────────────────────
+      {
+        path: 'admin/usuarios',
+        loadComponent: () => import('./features/admin/usuarios/usuarios').then(m => m.AdminUsuarios)
+      },
+      {
+        path: 'admin/roles',
+        loadComponent: () => import('./features/admin/roles/roles').then(m => m.AdminRoles)
+      },
+      {
+        path: 'admin/recursos',
+        loadComponent: () => import('./features/admin/recursos/recursos').then(m => m.AdminRecursos)
+      },
+      {
+        path: 'admin/recursos-rol',
+        loadComponent: () => import('./features/admin/recursos-rol/recursos-rol').then(m => m.AdminRecursosRol)
+      },
     ]
   },
 

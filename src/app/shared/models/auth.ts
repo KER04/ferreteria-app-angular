@@ -4,14 +4,20 @@ export interface LoginI {
   password: string;
 }
 
-// Lo que Django responde en el BODY (sin token, va en cookie)
+// Lo que Django responde en el BODY: tokens JWT + usuario
 export interface LoginResponseI {
-  message: string;
+  access: string;
+  refresh: string;
   user: {
     id: number;
     username: string;
     email: string;
   };
+}
+
+// Respuesta del refresh de token JWT
+export interface RefreshResponseI {
+  access: string;
 }
 
 // Para el registro

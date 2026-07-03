@@ -1,59 +1,92 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, BehaviorSubject } from 'rxjs';
-import { LoginI, LoginResponseI, RegisterI, RegisterResponseI, UserI } from '../../shared/models/auth';
+import { Observable, tap, map, finalize, BehaviorSubject } from 'rxjs';
+import {
+  LoginI,
+  LoginResponseI,
+  RefreshResponseI,
+  RegisterI,
+  RegisterResponseI,
+  UserI,
+} from '../../shared/models/auth';
+
+const ACCESS_KEY = 'ferretex_access';
+const REFRESH_KEY = 'ferretex_refresh';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private baseUrl = 'http://localhost:8000/api/auth';
 
-  // Guarda el estado del usuario actual
+  // Estado del usuario actual (undefined = aún no verificado)
   private userSubject = new BehaviorSubject<UserI | null | undefined>(undefined);
   public user$ = this.userSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    this.checkSession(); // ← verifica la cookie al arrancar la app
+    // Solo intentamos validar la sesión si hay un token guardado.
+    if (this.getAccessToken()) {
+      this.checkSession();
+    } else {
+      this.userSubject.next(null);
+    }
   }
 
-  // Llama al backend para ver si la cookie sigue válida
+  // ── Tokens ──────────────────────────────────────────────
+  getAccessToken(): string | null {
+    return localStorage.getItem(ACCESS_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_KEY);
+  }
+
+  private storeTokens(access: string, refresh?: string): void {
+    localStorage.setItem(ACCESS_KEY, access);
+    if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  }
+
+  clearSession(): void {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    this.userSubject.next(null);
+  }
+
+  // ── Sesión ──────────────────────────────────────────────
+  // Verifica el token actual contra /me/ (el interceptor añade el Bearer)
   checkSession(): void {
-    this.http.get<{ message: string, user: UserI }>(
-      `${this.baseUrl}/hello/`,
-      { withCredentials: true }
-    ).subscribe({
-      next: (response) => this.userSubject.next(response.user), // ← lee response.user
-      error: () => this.userSubject.next(null)
+    this.http.get<{ user: UserI }>(`${this.baseUrl}/me/`).subscribe({
+      next: (response) => this.userSubject.next(response.user),
+      error: () => this.clearSession(),
     });
   }
 
   login(credentials: LoginI): Observable<LoginResponseI> {
-    return this.http.post<LoginResponseI>(
-      `${this.baseUrl}/login/`,
-      credentials,
-      { withCredentials: true } // ← recibe las cookies httpOnly
-    ).pipe(
-      tap(response => {
-        // Guardamos el usuario en memoria (no el token, ese va en cookie)
+    return this.http.post<LoginResponseI>(`${this.baseUrl}/login/`, credentials).pipe(
+      tap((response) => {
+        this.storeTokens(response.access, response.refresh);
         this.userSubject.next(response.user);
       })
     );
   }
 
   register(userData: RegisterI): Observable<RegisterResponseI> {
-    return this.http.post<RegisterResponseI>(
-      `${this.baseUrl}/register/`,
-      userData,
-      { withCredentials: true }
-    );
+    return this.http.post<RegisterResponseI>(`${this.baseUrl}/register/`, userData);
   }
 
-  logout(): Observable<any> {
-    return this.http.post(
-      `${this.baseUrl}/logout/`,
-      {},
-      { withCredentials: true }
-    ).pipe(
-      tap(() => this.userSubject.next(null))
+  // Renueva el access token usando el refresh (usado por el interceptor en 401)
+  refreshToken(): Observable<string> {
+    const refresh = this.getRefreshToken();
+    return this.http
+      .post<RefreshResponseI>(`${this.baseUrl}/token/refresh/`, { refresh })
+      .pipe(
+        tap((res) => this.storeTokens(res.access)),
+        map((res) => res.access)
+      );
+  }
+
+  logout(): Observable<unknown> {
+    const refresh = this.getRefreshToken();
+    return this.http.post(`${this.baseUrl}/logout/`, { refresh }).pipe(
+      finalize(() => this.clearSession())
     );
   }
 
@@ -62,6 +95,6 @@ export class AuthService {
   }
 
   getCurrentUser(): UserI | null {
-  return this.userSubject.value ?? null;
-}
+    return this.userSubject.value ?? null;
+  }
 }
