@@ -1,40 +1,390 @@
-<!-- Plantilla mínima (sin diseño). La lógica CRUD/finalizar/cancelar ya está en el componente. -->
-<div class="mb-4">
-  <h2 class="text-headline-md font-bold text-on-surface">Registros de Mantenimiento</h2>
-  <p class="text-on-surface-variant text-sm">Componente y servicio listos — diseño pendiente.</p>
+<!-- Encabezado -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-primary tracking-tight mb-1">Gestión de Mantenimiento</h2>
+    <p class="text-on-surface-variant">Control técnico de activos y reparación de inventario industrial.</p>
+  </div>
+  <button type="button" (click)="openCreate()"
+    class="bg-primary text-on-primary h-12 px-6 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md">
+    <span class="material-symbols-outlined">add_circle</span>
+    Nuevo Mantenimiento
+  </button>
 </div>
 
+@if (successMsg()) {
+  <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">check_circle</span>{{ successMsg() }}
+  </div>
+}
 @if (error()) {
-  <p class="text-error text-sm mb-3">{{ error() }}</p>
+  <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">error</span>{{ error() }}
+  </div>
 }
 
-@if (loading()) {
-  <p class="text-on-surface-variant text-sm">Cargando...</p>
-} @else {
-  <table class="w-full text-left text-sm border border-outline-variant">
-    <thead class="bg-surface-container-low">
-      <tr>
-        <th class="px-3 py-2">#</th>
-        <th class="px-3 py-2">Producto</th>
-        <th class="px-3 py-2">Tipo</th>
-        <th class="px-3 py-2">Estado</th>
-        <th class="px-3 py-2">Ingresada</th>
-        <th class="px-3 py-2">Pendiente</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (r of registros(); track r.mant_id) {
-        <tr class="border-t border-outline-variant">
-          <td class="px-3 py-2">{{ r.mant_id }}</td>
-          <td class="px-3 py-2">{{ r.producto_nombre }}</td>
-          <td class="px-3 py-2">{{ r.tipo_mantenimiento_nombre }}</td>
-          <td class="px-3 py-2">{{ estadoLabel(r.estado) }}</td>
-          <td class="px-3 py-2">{{ r.cantidad_ingresada }}</td>
-          <td class="px-3 py-2">{{ r.cantidad_pendiente }}</td>
+<!-- KPIs (conteos reales) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-primary-fixed rounded"><span class="material-symbols-outlined text-primary">build_circle</span></div>
+      <span class="text-xs font-bold text-primary uppercase tracking-wider">En proceso</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiEnProceso() }}</h3>
+    <p class="text-on-surface-variant text-sm">Registros activos</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-secondary-fixed rounded"><span class="material-symbols-outlined text-secondary">check_circle</span></div>
+      <span class="text-xs font-bold text-secondary uppercase tracking-wider">Finalizados</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiFinalizado() }}</h3>
+    <p class="text-on-surface-variant text-sm">Mantenimientos cerrados</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-tertiary-fixed rounded"><span class="material-symbols-outlined text-tertiary">cancel</span></div>
+      <span class="text-xs font-bold text-tertiary uppercase tracking-wider">Cancelados</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiCancelado() }}</h3>
+    <p class="text-on-surface-variant text-sm">Registros anulados</p>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm">
+  <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <h4 class="font-bold text-on-surface px-2">Registros Recientes</h4>
+      <div class="h-6 w-px bg-outline-variant hidden md:block"></div>
+      <div class="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+        <button type="button" (click)="estadoFilter = ''; applyFilters()"
+          [ngClass]="estadoFilter === '' ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+          class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">Todos</button>
+        @for (e of estados; track e.value) {
+          <button type="button" (click)="estadoFilter = e.value; applyFilters()"
+            [ngClass]="estadoFilter === e.value ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+            class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">{{ e.label }}</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[900px]">
+      <thead class="bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+        <tr>
+          <th class="px-6 py-4">Código</th>
+          <th class="px-6 py-4">Producto</th>
+          <th class="px-6 py-4">Tipo</th>
+          <th class="px-6 py-4">Cant.</th>
+          <th class="px-6 py-4">Estado</th>
+          <th class="px-6 py-4">Entrada</th>
+          <th class="px-6 py-4 text-right">Acciones</th>
         </tr>
-      } @empty {
-        <tr><td colspan="6" class="px-3 py-4 text-on-surface-variant">Sin registros.</td></tr>
+      </thead>
+      <tbody class="text-sm divide-y divide-outline-variant">
+        @if (loading()) {
+          <tr><td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-3xl animate-spin block mb-2">progress_activity</span>Cargando...
+          </td></tr>
+        } @else {
+          @for (r of registros(); track r.mant_id) {
+            <tr class="hover:bg-on-surface-variant/5 transition-colors group">
+              <td class="px-6 py-4 font-mono font-bold text-primary">MN-{{ r.mant_id }}</td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-surface-variant text-xl">build</span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-on-surface">{{ r.producto_nombre }}</p>
+                    <p class="font-mono text-xs text-on-surface-variant">{{ r.producto_codigo }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="text-xs px-2 py-1 bg-primary-fixed text-primary rounded font-bold">{{ r.tipo_mantenimiento_nombre }}</span>
+              </td>
+              <td class="px-6 py-4">{{ r.cantidad_ingresada }}</td>
+              <td class="px-6 py-4">
+                <span class="flex items-center gap-1.5 font-bold"
+                  [ngClass]="{
+                    'text-secondary': r.estado === 'en_proceso',
+                    'text-outline': r.estado === 'finalizado',
+                    'text-error': r.estado === 'cancelado'
+                  }">
+                  <span class="w-2 h-2 rounded-full"
+                    [ngClass]="{
+                      'bg-secondary animate-pulse': r.estado === 'en_proceso',
+                      'bg-outline': r.estado === 'finalizado',
+                      'bg-error': r.estado === 'cancelado'
+                    }"></span>
+                  {{ estadoLabel(r.estado) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-on-surface-variant">{{ r.fecha_ingreso }}</td>
+              <td class="px-6 py-4 text-right">
+                @if (r.estado === 'en_proceso') {
+                  <div class="flex justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <button type="button" (click)="openEdit(r)" title="Editar"
+                      class="px-3 py-1 border border-outline-variant text-on-surface-variant text-xs font-bold rounded hover:bg-surface-container-high">Editar</button>
+                    <button type="button" (click)="openFinalizar(r)"
+                      class="px-3 py-1 bg-primary text-white text-xs font-bold rounded hover:bg-primary-container">Finalizar</button>
+                    <button type="button" (click)="openConfirm(r, 'cancelar')"
+                      class="px-3 py-1 border border-error text-error text-xs font-bold rounded hover:bg-error-container">Cancelar</button>
+                  </div>
+                } @else {
+                  <button type="button" (click)="openConfirm(r, 'eliminar')" title="Eliminar"
+                    class="text-on-surface-variant hover:text-error p-1"><span class="material-symbols-outlined">delete</span></button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl text-outline block mb-2">handyman</span>Sin registros de mantenimiento.
+            </td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between text-xs font-bold text-on-surface-variant">
+    <span>Mostrando {{ rangeStart() }}-{{ rangeEnd() }} de {{ count() }} registros</span>
+    <div class="flex gap-2">
+      <button type="button" (click)="goToPage(page() - 1)" [disabled]="page() === 1"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Anterior</button>
+      @for (n of pages(); track n) {
+        <button type="button" (click)="goToPage(n)"
+          [ngClass]="n === page() ? 'bg-primary text-white border-primary' : 'border-outline-variant hover:bg-surface-container-high'"
+          class="px-3 py-1 border rounded transition-colors">{{ n }}</button>
       }
-    </tbody>
-  </table>
+      <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CREAR / EDITAR ══════════════ -->
+@if (modalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeModal()">
+    <div class="bg-surface-container-lowest w-full max-w-lg rounded-lg border border-outline-variant shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+        <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined">{{ editing() ? 'edit_note' : 'handyman' }}</span>
+          {{ editing() ? 'Editar Registro' : 'Nuevo Mantenimiento' }}
+        </h3>
+        <button type="button" (click)="closeModal()" class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form class="p-6 space-y-4" (ngSubmit)="saveRegistro()">
+        @if (modalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ modalError() }}</span>
+          </div>
+        }
+        @if (editing()) {
+          <p class="text-xs text-on-surface-variant bg-surface-container-low border border-outline-variant rounded p-2">
+            En un registro en proceso solo se pueden modificar la descripción y el costo.
+          </p>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Producto *</label>
+            <select [(ngModel)]="fProducto" name="fProducto" [disabled]="!!editing()"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary disabled:opacity-60">
+              <option [ngValue]="''">Selecciona un producto</option>
+              @for (p of productos(); track p.prod_id) {
+                <option [ngValue]="p.prod_id">{{ p.prod_nombre }} ({{ p.codigo_producto }}) · Disp: {{ p.prod_cantidad_disponible }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Tipo *</label>
+            <select [(ngModel)]="fTipo" name="fTipo" [disabled]="!!editing()"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary disabled:opacity-60">
+              <option [ngValue]="''">Selecciona un tipo</option>
+              @for (t of tipos(); track t.tima_id) { <option [ngValue]="t.tima_id">{{ t.tima_nombre }}</option> }
+            </select>
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Cantidad *</label>
+            <input type="number" min="1" [(ngModel)]="fCantidad" name="fCantidad" [disabled]="!!editing()"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary disabled:opacity-60" />
+          </div>
+
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Costo asociado</label>
+            <select [(ngModel)]="fCosto" name="fCosto"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary">
+              <option [ngValue]="''">Sin costo</option>
+              @for (c of costos(); track c.cost_id) { <option [ngValue]="c.cost_id">{{ costoLabel(c) }}</option> }
+            </select>
+          </div>
+
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Descripción</label>
+            <textarea [(ngModel)]="fDescripcion" name="fDescripcion" rows="3" placeholder="Detalle del mantenimiento..."
+              class="w-full bg-surface border border-outline-variant rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary resize-y"></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" (click)="closeModal()" [disabled]="saving()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Cancelar</button>
+          <button type="submit" [disabled]="saving()"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
+            @if (saving()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando... }
+            @else { <span class="material-symbols-outlined text-lg">save</span>{{ editing() ? 'Guardar' : 'Registrar' }} }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ MODAL FINALIZAR (registrar salida) ══════════════ -->
+@if (finalizarTarget(); as m) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/40 backdrop-blur-sm" (click)="closeFinalizar()">
+    <div class="bg-surface-container-lowest w-full max-w-2xl rounded-lg border border-outline-variant shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+      <!-- Cabecera -->
+      <div class="p-6 border-b border-outline-variant bg-surface-container-low flex justify-between items-start">
+        <div>
+          <span class="inline-block px-2 py-1 mb-2 bg-primary-container/10 text-primary-container text-[10px] font-bold tracking-widest uppercase rounded">Orden MN-{{ m.mant_id }}</span>
+          <h3 class="text-headline-md font-bold text-primary">Finalizar Registro de Salida</h3>
+          <p class="text-on-surface-variant text-body-md mt-1">Concluye el proceso para reintegrar o dar de baja unidades.</p>
+        </div>
+        <button type="button" (click)="closeFinalizar()" class="p-2 hover:bg-outline-variant/20 rounded-full transition-colors"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <!-- Resumen del producto -->
+      <div class="px-6 py-4 bg-surface-bright border-b border-outline-variant flex items-center gap-6">
+        <div class="w-16 h-16 bg-surface-container-high flex items-center justify-center rounded"><span class="material-symbols-outlined text-primary text-3xl">build</span></div>
+        <div class="flex-1">
+          <p class="text-outline text-label-md">Producto</p>
+          <h4 class="text-headline-sm font-bold text-on-surface">{{ m.producto_nombre }}</h4>
+          <div class="flex items-center gap-3 mt-1 text-sm">
+            <span class="font-bold text-primary flex items-center gap-1"><span class="material-symbols-outlined text-sm">package_2</span>Ingresadas: {{ m.cantidad_ingresada }}</span>
+            <span class="text-xs text-outline">|</span>
+            <span class="text-xs text-outline">Pendientes: {{ m.cantidad_pendiente }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-6">
+        @if (finalizarError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ finalizarError() }}</span>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="block text-label-md text-on-surface-variant">Unidades Recuperadas</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-secondary">check_circle</span>
+              <input type="number" min="0" [(ngModel)]="sRecuperada" name="sRecuperada"
+                class="w-full h-12 pl-10 pr-4 border-2 border-outline-variant rounded focus:border-primary outline-none font-bold text-lg" />
+            </div>
+            <p class="text-[11px] text-outline italic">Vuelven al stock disponible.</p>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-label-md text-on-surface-variant">Unidades de Baja</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-error">dangerous</span>
+              <input type="number" min="0" [(ngModel)]="sBaja" name="sBaja"
+                class="w-full h-12 pl-10 pr-4 border-2 border-outline-variant rounded focus:border-error outline-none font-bold text-lg" />
+            </div>
+            <p class="text-[11px] text-outline italic">Retiro definitivo por daño.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          <div class="space-y-2">
+            <label class="block text-label-md text-on-surface-variant">Costo asociado</label>
+            <select [(ngModel)]="sCosto" name="sCosto"
+              class="w-full h-12 px-3 border border-outline-variant rounded focus:border-primary outline-none">
+              <option [ngValue]="''">Sin costo</option>
+              @for (c of costos(); track c.cost_id) { <option [ngValue]="c.cost_id">{{ costoLabel(c) }}</option> }
+            </select>
+          </div>
+          <!-- Validación en vivo -->
+          <div class="p-3 rounded border flex items-center gap-3"
+            [ngClass]="((sRecuperada || 0) + (sBaja || 0)) > m.cantidad_ingresada ? 'bg-error-container/20 border-error/20'
+              : ((sRecuperada || 0) + (sBaja || 0)) > 0 ? 'bg-primary/10 border-primary/20' : 'bg-surface-container-low border-outline-variant'">
+            <span class="material-symbols-outlined"
+              [ngClass]="((sRecuperada || 0) + (sBaja || 0)) > m.cantidad_ingresada ? 'text-error'
+                : ((sRecuperada || 0) + (sBaja || 0)) > 0 ? 'text-primary' : 'text-outline'">
+              {{ ((sRecuperada || 0) + (sBaja || 0)) > m.cantidad_ingresada ? 'warning'
+                : ((sRecuperada || 0) + (sBaja || 0)) > 0 ? 'check_circle' : 'hourglass_empty' }}
+            </span>
+            <div class="flex-1">
+              @if (((sRecuperada || 0) + (sBaja || 0)) > m.cantidad_ingresada) {
+                <p class="text-sm font-bold text-error">Excedente: {{ (sRecuperada || 0) + (sBaja || 0) - m.cantidad_ingresada }} un.</p>
+              } @else if (((sRecuperada || 0) + (sBaja || 0)) > 0) {
+                <p class="text-sm font-bold text-primary">{{ (sRecuperada || 0) + (sBaja || 0) }} de {{ m.cantidad_ingresada }} unidades</p>
+              } @else {
+                <p class="text-sm text-outline">Indica recuperadas o bajas.</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-label-md text-on-surface-variant">Observaciones Finales</label>
+          <textarea [(ngModel)]="sObservaciones" name="sObservaciones" rows="3" placeholder="Detalles de la reparación o motivo de bajas..."
+            class="w-full border border-outline-variant rounded p-3 outline-none focus:border-primary resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="p-4 bg-surface-container-high flex justify-end gap-3">
+        <button type="button" (click)="closeFinalizar()" [disabled]="finalizando()"
+          class="px-6 h-12 rounded font-bold text-on-surface-variant hover:bg-outline-variant/30 transition-colors disabled:opacity-40">Cancelar</button>
+        <button type="button" (click)="submitFinalizar()"
+          [disabled]="finalizando() || ((sRecuperada || 0) + (sBaja || 0)) <= 0 || ((sRecuperada || 0) + (sBaja || 0)) > m.cantidad_ingresada"
+          class="px-8 h-12 bg-primary text-on-primary font-bold rounded shadow hover:bg-primary-container active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:active:scale-100">
+          @if (finalizando()) { <span class="material-symbols-outlined animate-spin">progress_activity</span>Procesando... }
+          @else { Finalizar Registro <span class="material-symbols-outlined text-[18px]">output</span> }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ CONFIRMAR CANCELAR / ELIMINAR ══════════════ -->
+@if (confirmTarget(); as m) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeConfirm()">
+    <div class="bg-surface-container-lowest w-full max-w-md rounded-lg border border-outline-variant shadow-2xl p-6" (click)="$event.stopPropagation()">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full bg-error-container/60 flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-error text-2xl">{{ confirmAction() === 'cancelar' ? 'undo' : 'delete_forever' }}</span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-on-surface">{{ confirmAction() === 'cancelar' ? 'Cancelar mantenimiento' : 'Eliminar registro' }}</h3>
+          <p class="text-sm text-on-surface-variant mt-1">
+            {{ confirmAction() === 'cancelar'
+              ? 'El stock retenido volverá al inventario. ¿Continuar con MN-' + m.mant_id + '?'
+              : '¿Eliminar definitivamente el registro MN-' + m.mant_id + '? Esta acción no se puede deshacer.' }}
+          </p>
+        </div>
+      </div>
+      @if (confirmError()) {
+        <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mt-4 flex items-start gap-2 text-sm">
+          <span class="material-symbols-outlined text-lg">error</span><span>{{ confirmError() }}</span>
+        </div>
+      }
+      <div class="flex items-center justify-end gap-3 mt-6">
+        <button type="button" (click)="closeConfirm()" [disabled]="confirming()"
+          class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Volver</button>
+        <button type="button" (click)="submitConfirm()" [disabled]="confirming()"
+          class="bg-error text-on-error px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
+          @if (confirming()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Procesando... }
+          @else { {{ confirmAction() === 'cancelar' ? 'Cancelar mantenimiento' : 'Eliminar' }} }
+        </button>
+      </div>
+    </div>
+  </div>
 }

@@ -29,65 +29,47 @@
 }
 
 <!-- Filtros -->
-<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6">
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-    <div class="space-y-1">
-      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo</label>
-      <select
-        [(ngModel)]="tipoFilter"
-        (ngModelChange)="applyFilters()"
-        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-      >
-        <option [ngValue]="''">Todos los tipos</option>
-        @for (t of tipos; track t) {
-          <option [ngValue]="t">{{ tipoLabel(t) }}</option>
-        }
-      </select>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-surface-container-low p-4 rounded-xl border border-outline-variant mb-6">
+  <!-- Tipo (chips) -->
+  <div class="flex flex-col gap-2">
+    <label class="text-on-surface-variant text-label-md px-1">Tipo de Operación</label>
+    <div class="flex bg-surface-container rounded-lg p-1">
+      <button type="button" (click)="setTipo('')"
+        [ngClass]="tipoFilter === '' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-variant'"
+        class="flex-1 py-1.5 text-sm rounded-md transition-colors">Todos</button>
+      <button type="button" (click)="setTipo('venta')"
+        [ngClass]="tipoFilter === 'venta' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-variant'"
+        class="flex-1 py-1.5 text-sm rounded-md transition-colors">Venta</button>
+      <button type="button" (click)="setTipo('prestamo')"
+        [ngClass]="tipoFilter === 'prestamo' ? 'bg-surface-container-lowest shadow-sm text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-variant'"
+        class="flex-1 py-1.5 text-sm rounded-md transition-colors">Préstamo</button>
     </div>
+  </div>
 
-    <div class="space-y-1">
-      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
-      <select
-        [(ngModel)]="estadoFilter"
-        (ngModelChange)="applyFilters()"
-        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary capitalize"
-      >
-        <option [ngValue]="''">Todos los estados</option>
-        @for (e of estados; track e) {
-          <option [ngValue]="e" class="capitalize">{{ e }}</option>
-        }
-      </select>
-    </div>
+  <!-- Estado -->
+  <div class="flex flex-col gap-2">
+    <label class="text-on-surface-variant text-label-md px-1">Estado</label>
+    <select [(ngModel)]="estadoFilter" (ngModelChange)="applyFilters()"
+      class="bg-surface-container-lowest border border-outline-variant rounded-lg h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary capitalize">
+      <option [ngValue]="''">Todos los estados</option>
+      @for (e of estados; track e) { <option [ngValue]="e" class="capitalize">{{ e }}</option> }
+    </select>
+  </div>
 
-    <div class="space-y-1">
-      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Buscar</label>
-      <input
-        type="text"
-        [(ngModel)]="searchTerm"
-        (keyup.enter)="applyFilters()"
-        placeholder="Código o cliente..."
-        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-      />
+  <!-- Buscar -->
+  <div class="flex flex-col gap-2">
+    <label class="text-on-surface-variant text-label-md px-1">Buscar</label>
+    <div class="relative">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
+      <input type="text" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" placeholder="Código o cliente..."
+        class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg h-10 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
     </div>
+  </div>
 
-    <div class="flex items-center gap-3">
-      <button
-        type="button"
-        (click)="applyFilters()"
-        class="bg-primary/10 text-primary font-bold text-sm px-4 h-10 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors"
-      >
-        <span class="material-symbols-outlined text-lg">search</span>
-        Filtrar
-      </button>
-      <button
-        type="button"
-        (click)="clearFilters()"
-        class="text-primary font-bold text-sm flex items-center gap-1 hover:underline"
-      >
-        <span class="material-symbols-outlined text-lg">filter_list_off</span>
-        Limpiar
-      </button>
-    </div>
+  <!-- Mini card: Total ventas hoy -->
+  <div class="bg-primary-container text-on-primary-container p-4 rounded-lg flex flex-col justify-center">
+    <span class="text-label-md opacity-80">Total Ventas Hoy</span>
+    <span class="text-headline-sm font-extrabold">{{ ventasHoy() | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
   </div>
 </div>
 
@@ -108,12 +90,17 @@
       </thead>
       <tbody class="divide-y divide-outline-variant">
         @if (loading()) {
-          <tr>
-            <td colspan="7" class="px-6 py-16 text-center text-on-surface-variant">
-              <span class="material-symbols-outlined text-4xl animate-spin block mb-2">progress_activity</span>
-              Cargando operaciones...
-            </td>
-          </tr>
+          @for (i of [1,2,3,4,5,6]; track i) {
+            <tr>
+              <td class="px-6 py-4"><div class="h-5 w-24 skeleton"></div></td>
+              <td class="px-6 py-4"><div class="h-6 w-16 skeleton rounded-full"></div></td>
+              <td class="px-6 py-4"><div class="h-6 w-20 skeleton rounded-full"></div></td>
+              <td class="px-6 py-4"><div class="h-5 w-28 skeleton"></div></td>
+              <td class="px-6 py-4"><div class="h-5 w-24 skeleton"></div></td>
+              <td class="px-6 py-4"><div class="h-5 w-16 skeleton"></div></td>
+              <td class="px-6 py-4"><div class="h-8 w-20 skeleton ml-auto"></div></td>
+            </tr>
+          }
         } @else {
           @for (op of operaciones(); track op.id) {
             <tr class="hover:bg-surface-container-low transition-colors">
@@ -185,6 +172,31 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+  <div class="bg-surface-container p-6 rounded-xl border border-outline-variant flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">sell</span></div>
+    <div>
+      <p class="text-on-surface-variant text-label-md">Ventas de Hoy</p>
+      <h4 class="text-headline-sm font-bold">{{ ventasHoy() | currency: 'USD' : 'symbol' : '1.0-0' }}</h4>
+    </div>
+  </div>
+  <div class="bg-surface-container p-6 rounded-xl border border-outline-variant flex items-center gap-4">
+    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span></div>
+    <div>
+      <p class="text-on-surface-variant text-label-md">Préstamos Activos</p>
+      <h4 class="text-headline-sm font-bold">{{ prestamosActivos() }}</h4>
+    </div>
+  </div>
+  <a routerLink="/ventas/vencidos" class="bg-surface-container p-6 rounded-xl border border-outline-variant flex items-center gap-4 hover:border-error/40 transition-colors">
+    <div class="w-12 h-12 rounded-full bg-tertiary-container/10 flex items-center justify-center text-error"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span></div>
+    <div>
+      <p class="text-on-surface-variant text-label-md">Préstamos Vencidos</p>
+      <h4 class="text-headline-sm font-bold" [class.text-error]="vencidosCount() > 0">{{ vencidosCount() }} alertas</h4>
+    </div>
+  </a>
 </div>
 
 <!-- ══════════════ MODAL DETALLE ══════════════ -->
@@ -319,13 +331,10 @@
         <!-- Buscador de productos -->
         <div class="border border-outline-variant rounded-lg p-4 space-y-3">
           <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Añadir productos</label>
-          <div class="flex gap-2">
-            <input type="text" [(ngModel)]="productoSearch" (keyup.enter)="buscarProductos()" placeholder="Buscar por nombre o código..."
-              class="flex-1 bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary" />
-            <button type="button" (click)="buscarProductos()"
-              class="bg-primary/10 text-primary font-bold text-sm px-4 h-10 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors">
-              <span class="material-symbols-outlined text-lg">search</span>Buscar
-            </button>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
+            <input type="text" [ngModel]="productoSearch" (ngModelChange)="onProductoSearch($event)" placeholder="Buscar por nombre o código..."
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 pl-10 pr-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary" />
           </div>
 
           @if (buscandoProductos()) {

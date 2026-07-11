@@ -1,3 +1,15 @@
+/* Skeleton shimmer para el estado de carga */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 6px;
+}
+
 /* Scrollbar personalizado para tablas y modales del módulo operaciones */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

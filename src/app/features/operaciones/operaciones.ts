@@ -1,8 +1,14 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { OperacionService } from '../../core/services/operacion.service';
 import { ProductoService } from '../../core/services/producto.service';
+import { ConfirmService } from '../../core/services/confirm.service';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+
+// Retardo estándar para búsqueda en vivo (debounce)
+const SEARCH_DEBOUNCE = 300;
 import { Producto } from '../../shared/models/producto';
 import {
   EstadoOperacion,
@@ -27,13 +33,14 @@ interface LineaForm {
 @Component({
   selector: 'app-operaciones',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './operaciones.html',
   styleUrl: './operaciones.css',
 })
 export class Operaciones implements OnInit {
   private operacionService = inject(OperacionService);
   private productoService = inject(ProductoService);
+  private confirmSvc = inject(ConfirmService);
 
   // ── Estado de datos ──────────────────────────────
   operaciones = signal<Operacion[]>([]);
@@ -52,6 +59,12 @@ export class Operaciones implements OnInit {
 
   readonly tipos: TipoOperacion[] = ['venta', 'prestamo'];
   readonly estados: EstadoOperacion[] = ['activa', 'finalizada', 'cancelada'];
+
+  // Resumen (tarjetas)
+  ventasHoy = signal(0);
+  prestamosActivos = signal(0);
+  vencidosCount = signal(0);
+  readonly hoyISO = new Date().toISOString().substring(0, 10);
 
   // ── Detalle (modal de solo lectura) ──────────────
   detalleOp = signal<Operacion | null>(null);
@@ -97,8 +110,51 @@ export class Operaciones implements OnInit {
     this.lineas().reduce((acc, l) => acc + l.cantidad * Number(l.precio_unitario || 0), 0),
   );
 
+  // Búsqueda en vivo (debounce)
+  private search$ = new Subject<string>();
+  private productoSearch$ = new Subject<string>();
+
   ngOnInit(): void {
     this.loadOperaciones();
+    this.loadResumen();
+
+    this.search$.pipe(debounceTime(SEARCH_DEBOUNCE), distinctUntilChanged()).subscribe((term) => {
+      this.searchTerm = term;
+      this.applyFilters();
+    });
+
+    this.productoSearch$.pipe(debounceTime(SEARCH_DEBOUNCE), distinctUntilChanged()).subscribe((term) => {
+      this.productoSearch = term;
+      this.buscarProductos();
+    });
+  }
+
+  onSearch(term: string): void {
+    this.search$.next(term);
+  }
+
+  onProductoSearch(term: string): void {
+    this.productoSearch$.next(term);
+  }
+
+  loadResumen(): void {
+    this.operacionService.getOperaciones({ tipo_operacion: 'venta', fecha_operacion: this.hoyISO, page: 1 }).subscribe({
+      next: (r) => this.ventasHoy.set(r.results.reduce((a, o) => a + Number(o.total || 0), 0)),
+      error: () => {},
+    });
+    this.operacionService.getOperaciones({ tipo_operacion: 'prestamo', estado: 'activa', page: 1 }).subscribe({
+      next: (r) => this.prestamosActivos.set(r.count),
+      error: () => {},
+    });
+    this.operacionService.getVencidos(1).subscribe({
+      next: (r) => this.vencidosCount.set(r.count),
+      error: () => {},
+    });
+  }
+
+  setTipo(v: TipoOperacion | ''): void {
+    this.tipoFilter = v;
+    this.applyFilters();
   }
 
   // ── Cargas ───────────────────────────────────────
@@ -166,19 +222,47 @@ export class Operaciones implements OnInit {
 
   // ── Acciones: finalizar / cancelar / eliminar ────
   finalizar(op: Operacion): void {
-    if (!confirm(`¿Finalizar la operación ${op.codigo_operacion}?`)) return;
-    this.ejecutarAccion(op.id, this.operacionService.finalizarOperacion(op.id));
+    this.confirmSvc.ask({
+      title: 'Finalizar operación',
+      message: `¿Finalizar la operación ${op.codigo_operacion}?`,
+      confirmText: 'Finalizar',
+      tone: 'primary',
+      icon: 'task_alt',
+    }).then((ok) => {
+      if (!ok) return;
+      this.ejecutarAccion(op.id, this.operacionService.finalizarOperacion(op.id));
+    });
   }
 
   cancelar(op: Operacion): void {
-    if (!confirm(`¿Cancelar la operación ${op.codigo_operacion}? Esta acción repone el stock.`)) return;
-    this.ejecutarAccion(op.id, this.operacionService.cancelarOperacion(op.id));
+    this.confirmSvc.ask({
+      title: 'Cancelar operación',
+      message: `¿Cancelar la operación ${op.codigo_operacion}? Esta acción repone el stock.`,
+      confirmText: 'Cancelar operación',
+      cancelText: 'Volver',
+      tone: 'danger',
+      icon: 'cancel',
+    }).then((ok) => {
+      if (!ok) return;
+      this.ejecutarAccion(op.id, this.operacionService.cancelarOperacion(op.id));
+    });
   }
 
   eliminar(op: Operacion): void {
     if (op.estado === 'activa') return; // el backend lo rechaza: cancelar primero
-    if (!confirm(`¿Eliminar definitivamente la operación ${op.codigo_operacion}?`)) return;
+    this.confirmSvc.ask({
+      title: 'Eliminar operación',
+      message: `¿Eliminar definitivamente la operación ${op.codigo_operacion}? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.procederEliminar(op);
+    });
+  }
 
+  private procederEliminar(op: Operacion): void {
     this.accionEnCurso.set(op.id);
     this.operacionService.deleteOperacion(op.id).subscribe({
       next: () => {
@@ -213,6 +297,7 @@ export class Operaciones implements OnInit {
 
   private notificar(msg: string): void {
     this.successMsg.set(msg);
+    this.loadResumen();
     setTimeout(() => this.successMsg.set(null), 5000);
   }
 

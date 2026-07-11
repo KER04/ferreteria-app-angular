@@ -46,6 +46,11 @@ export class MantenimientoRegistros implements OnInit {
 
   readonly estados = MANT_ESTADOS;
 
+  // KPIs (conteos reales por estado)
+  kpiEnProceso = signal(0);
+  kpiFinalizado = signal(0);
+  kpiCancelado = signal(0);
+
   // ── Modal crear / editar ─────────────────────────
   modalOpen = signal(false);
   editing = signal<Mantenimiento | null>(null);
@@ -92,7 +97,23 @@ export class MantenimientoRegistros implements OnInit {
 
   ngOnInit(): void {
     this.loadCatalogos();
+    this.loadKpis();
     this.loadRegistros();
+  }
+
+  loadKpis(): void {
+    this.mantService.getRegistros({ estado: 'en_proceso', page: 1 }).subscribe({
+      next: (r) => this.kpiEnProceso.set(r.count),
+      error: () => {},
+    });
+    this.mantService.getRegistros({ estado: 'finalizado', page: 1 }).subscribe({
+      next: (r) => this.kpiFinalizado.set(r.count),
+      error: () => {},
+    });
+    this.mantService.getRegistros({ estado: 'cancelado', page: 1 }).subscribe({
+      next: (r) => this.kpiCancelado.set(r.count),
+      error: () => {},
+    });
   }
 
   // ── Cargas ───────────────────────────────────────
@@ -174,6 +195,7 @@ export class MantenimientoRegistros implements OnInit {
 
   private flashSuccess(msg: string): void {
     this.successMsg.set(msg);
+    this.loadKpis();
     setTimeout(() => this.successMsg.set(null), 4000);
   }
 

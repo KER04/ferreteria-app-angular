@@ -1,0 +1,205 @@
+<div class="max-w-6xl mx-auto">
+  <!-- Encabezado de acciones -->
+  <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-4">
+    <div>
+      <h2 class="text-headline-md font-bold text-primary mb-1">Gestión de Catálogos</h2>
+      <p class="text-on-surface-variant text-body-md">
+        Administra las entidades maestras del sistema para mantener el orden técnico.
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="openCreate()"
+      class="bg-primary text-on-primary h-12 px-6 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md"
+    >
+      <span class="material-symbols-outlined">add_circle</span>
+      Añadir Nuevo
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+      <span class="material-symbols-outlined">error</span>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Grid: tabs + tabla -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- Tabs laterales -->
+    <div class="lg:col-span-3 space-y-2">
+      @for (t of tabs; track t.key) {
+        <button
+          type="button"
+          (click)="setTab(t.key)"
+          [class.active-tab]="activeTab() === t.key"
+          class="w-full text-left p-4 rounded-xl border border-outline-variant bg-surface-container-lowest shadow-sm hover:border-primary transition-all group flex items-center gap-3"
+        >
+          <div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+            <span class="material-symbols-outlined">{{ t.icon }}</span>
+          </div>
+          <div>
+            <p class="font-bold text-on-surface">{{ t.label }}</p>
+            <p class="text-xs text-on-surface-variant">{{ tabCount(t.key) }} registros</p>
+          </div>
+        </button>
+      }
+    </div>
+
+    <!-- Tabla -->
+    <div class="lg:col-span-9 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+      <div class="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+        <h3 class="text-headline-sm font-bold text-on-surface">{{ currentMeta().title }}</h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-surface-container">
+            <tr>
+              <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider">Nombre</th>
+              @if (activeTab() === 'prestamos') {
+                <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider">Tipo</th>
+              }
+              <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-variant text-table-data">
+            @if (loading()) {
+              <tr>
+                <td [attr.colspan]="activeTab() === 'prestamos' ? 3 : 2" class="px-6 py-12 text-center text-on-surface-variant">
+                  <span class="material-symbols-outlined text-3xl animate-spin block mb-2">progress_activity</span>
+                  Cargando...
+                </td>
+              </tr>
+            } @else {
+              @for (row of rows(); track row.id) {
+                <tr class="hover:bg-on-surface-variant/5 transition-colors">
+                  <td class="px-6 py-4 font-bold text-on-surface">{{ row.nombre }}</td>
+                  @if (activeTab() === 'prestamos') {
+                    <td class="px-6 py-4 text-on-surface-variant">{{ row.tipo }}</td>
+                  }
+                  <td class="px-6 py-4 text-right space-x-1">
+                    <button type="button" (click)="openEdit(row)" title="Editar"
+                      class="w-9 h-9 rounded-lg hover:bg-primary-container/20 text-primary transition-colors">
+                      <span class="material-symbols-outlined text-lg">edit</span>
+                    </button>
+                    <button type="button" (click)="remove(row)" title="Eliminar"
+                      class="w-9 h-9 rounded-lg hover:bg-error-container/20 text-error transition-colors">
+                      <span class="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="activeTab() === 'prestamos' ? 3 : 2" class="px-6 py-12 text-center text-on-surface-variant">
+                    <span class="material-symbols-outlined text-3xl text-outline block mb-2">inbox</span>
+                    No hay registros. Usa «Añadir Nuevo» para crear uno.
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ayuda contextual -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+    <div class="p-6 bg-primary-container/10 border border-primary/20 rounded-xl">
+      <div class="flex items-center gap-2 text-primary mb-2">
+        <span class="material-symbols-outlined">info</span>
+        <span class="font-bold">Uso de Categorías</span>
+      </div>
+      <p class="text-sm text-on-surface-variant leading-relaxed">
+        Utilice categorías para organizar el inventario principal. Esto afecta directamente a los reportes de existencias.
+      </p>
+    </div>
+    <div class="p-6 bg-secondary-container/10 border border-secondary/20 rounded-xl">
+      <div class="flex items-center gap-2 text-secondary mb-2">
+        <span class="material-symbols-outlined">verified</span>
+        <span class="font-bold">Control de Marcas</span>
+      </div>
+      <p class="text-sm text-on-surface-variant leading-relaxed">
+        Las marcas facilitan la búsqueda rápida por parte del personal de mostrador durante el proceso de venta.
+      </p>
+    </div>
+    <div class="p-6 bg-tertiary-container/10 border border-tertiary/20 rounded-xl">
+      <div class="flex items-center gap-2 text-tertiary mb-2">
+        <span class="material-symbols-outlined">policy</span>
+        <span class="font-bold">Tipos de Préstamo</span>
+      </div>
+      <p class="text-sm text-on-surface-variant leading-relaxed">
+        Defina plazos y condiciones para herramientas en consignación o préstamos industriales a contratistas.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CREAR / EDITAR ══════════════ -->
+@if (modalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeModal()">
+    <div class="bg-surface-container-lowest w-full max-w-md rounded-xl border border-outline-variant shadow-lg" (click)="$event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+        <h3 class="text-lg font-bold text-on-surface">
+          {{ editingId() ? 'Editar' : 'Nuevo' }} · {{ currentMeta().label }}
+        </h3>
+        <button type="button" (click)="closeModal()" class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <form class="px-6 py-5 space-y-4" (ngSubmit)="save()">
+        @if (modalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span>
+            <span>{{ modalError() }}</span>
+          </div>
+        }
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Nombre *</label>
+          <input
+            type="text"
+            name="fNombre"
+            [(ngModel)]="fNombre"
+            maxlength="45"
+            placeholder="Nombre"
+            class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+          />
+        </div>
+
+        @if (activeTab() === 'prestamos') {
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo de préstamo *</label>
+            <input
+              type="text"
+              name="fTipo"
+              [(ngModel)]="fTipo"
+              maxlength="45"
+              placeholder="Ej. Corto plazo, Consignación..."
+              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            />
+          </div>
+        }
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" (click)="closeModal()" [disabled]="saving()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="saving()"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-60">
+            @if (saving()) {
+              <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
+              Guardando...
+            } @else {
+              <span class="material-symbols-outlined text-lg">save</span>
+              {{ editingId() ? 'Guardar' : 'Crear' }}
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

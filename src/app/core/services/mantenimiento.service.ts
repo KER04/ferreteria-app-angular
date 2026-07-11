@@ -73,6 +73,14 @@ export class MantenimientoService {
     return this.fetchAll<Mantenimiento>(`${this.baseUrl}/registros/`, params);
   }
 
+  getAllRegistros(): Observable<Mantenimiento[]> {
+    return this.fetchAll<Mantenimiento>(`${this.baseUrl}/registros/`);
+  }
+
+  getAllSalidas(): Observable<SalidaMantenimiento[]> {
+    return this.fetchAll<SalidaMantenimiento>(`${this.baseUrl}/salidas/`);
+  }
+
   createRegistro(body: MantenimientoWrite): Observable<Mantenimiento> {
     return this.http.post<Mantenimiento>(`${this.baseUrl}/registros/`, body);
   }

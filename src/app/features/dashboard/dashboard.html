@@ -1,53 +1,199 @@
-<!-- Plantilla mínima (sin diseño). Datos reales de /api/inventario/dashboard/. -->
-<div class="mb-4">
-  <h2 class="text-headline-md font-bold text-on-surface">Dashboard</h2>
-  <p class="text-on-surface-variant text-sm">Resumen de inventario y operaciones.</p>
+<div class="space-y-4">
+  <!-- Encabezado -->
+  <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+    <div>
+      <h2 class="text-headline-md font-bold text-on-surface">Panel de Control</h2>
+      <p class="text-on-surface-variant text-body-md">Resumen operativo al {{ hoy | date: 'longDate' }}</p>
+    </div>
+    <a routerLink="/ventas"
+       class="bg-primary text-on-primary px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold hover:opacity-90 active:scale-[0.98] transition-all">
+      <span class="material-symbols-outlined text-[20px]">add</span>
+      Nueva Venta
+    </a>
+  </div>
+
+  @if (error()) {
+    <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+      <span class="material-symbols-outlined">error</span>{{ error() }}
+    </div>
+  }
+
+  <!-- KPIs -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary/30 transition-colors">
+      <div class="p-2 bg-primary/10 rounded-lg text-primary w-fit mb-4"><span class="material-symbols-outlined">inventory</span></div>
+      <p class="text-on-surface-variant text-label-md font-medium">Total Productos</p>
+      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.total_productos ?? 0) | number }}</h3>
+      <p class="text-[11px] text-outline mt-2">Registrados en el sistema</p>
+    </div>
+
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-secondary/30 transition-colors">
+      <div class="flex justify-between items-start mb-4">
+        <div class="p-2 bg-secondary/10 rounded-lg text-secondary"><span class="material-symbols-outlined">warning</span></div>
+        @if ((resumen()?.inventario?.bajo_stock ?? 0) > 0) {
+          <span class="text-error text-xs font-bold">Crítico</span>
+        }
+      </div>
+      <p class="text-on-surface-variant text-label-md font-medium">Stock Bajo</p>
+      <h3 class="text-3xl font-bold text-secondary mt-1">{{ (resumen()?.inventario?.bajo_stock ?? 0) | number }}</h3>
+      <p class="text-[11px] text-outline mt-2">Requieren reabastecimiento</p>
+    </div>
+
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-tertiary/30 transition-colors">
+      <div class="p-2 bg-tertiary-container/10 rounded-lg text-tertiary w-fit mb-4"><span class="material-symbols-outlined">build</span></div>
+      <p class="text-on-surface-variant text-label-md font-medium">En Mantenimiento</p>
+      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.en_mantenimiento ?? 0) | number }}</h3>
+      <p class="text-[11px] text-outline mt-2">Equipos fuera de servicio</p>
+    </div>
+
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary-container/30 transition-colors">
+      <div class="p-2 bg-primary-container/10 rounded-lg text-primary-container w-fit mb-4"><span class="material-symbols-outlined">payments</span></div>
+      <p class="text-on-surface-variant text-label-md font-medium">Valor Inventario</p>
+      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.valor_total_disponible ?? 0) | currency: 'USD' : 'symbol' : '1.0-0' }}</h3>
+      <p class="text-[11px] text-outline mt-2">Precio de costo disponible</p>
+    </div>
+  </div>
+
+  <!-- Área principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- Columna izquierda -->
+    <div class="lg:col-span-8 space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Stock Bajo -->
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col h-[400px]">
+          <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+            <h4 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-secondary">error</span> Stock Bajo
+            </h4>
+            <a routerLink="/inventario" class="text-primary text-xs font-bold hover:underline">Ver todo</a>
+          </div>
+          <div class="flex-1 overflow-y-auto divide-y divide-outline-variant/40">
+            @for (p of lowStock(); track p.prod_id) {
+              <div class="flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors">
+                <div>
+                  <p class="text-label-md font-bold text-on-surface">{{ p.prod_nombre }}</p>
+                  <p class="text-[12px] text-on-surface-variant font-mono">{{ p.codigo_producto }}</p>
+                </div>
+                <span class="px-2 py-1 rounded text-[11px] font-bold"
+                      [ngClass]="p.prod_cantidad_disponible === 0 ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-secondary-container'">
+                  {{ p.prod_cantidad_disponible }} u.
+                </span>
+              </div>
+            } @empty {
+              <div class="p-6 text-center text-on-surface-variant text-sm">Sin productos en stock bajo. 👍</div>
+            }
+          </div>
+        </div>
+
+        <!-- Préstamos Vencidos -->
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col h-[400px]">
+          <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
+            <h4 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="material-symbols-outlined text-error">assignment_late</span> Préstamos Vencidos
+            </h4>
+            <a routerLink="/ventas/vencidos" class="text-primary text-xs font-bold hover:underline">Gestionar</a>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4 space-y-3">
+            @for (op of vencidos(); track op.id) {
+              <div class="flex items-center gap-3 p-3 bg-error/5 rounded-lg border-l-4 border-error">
+                <div class="flex-1 min-w-0">
+                  <p class="text-label-md font-bold text-on-surface font-mono truncate">{{ op.codigo_operacion }}</p>
+                  <p class="text-[11px] text-on-surface-variant truncate">Cliente: {{ op.cliente || '—' }}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-error font-bold text-label-md">+{{ diasVencido(op.fecha_devolucion) }} días</p>
+                  <p class="text-[10px] text-outline">Venció: {{ op.fecha_devolucion }}</p>
+                </div>
+              </div>
+            } @empty {
+              <div class="p-6 text-center text-on-surface-variant text-sm">No hay préstamos vencidos. 🎉</div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Operaciones (gráfico adaptado) -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+        <div class="flex justify-between items-center mb-8">
+          <h4 class="text-headline-sm font-bold text-on-surface">Operaciones por estado</h4>
+        </div>
+        <div class="h-48 flex items-end justify-around gap-4 px-2">
+          @for (bar of opsChart(); track bar.label) {
+            <div class="flex-1 flex flex-col items-center gap-2 group max-w-[120px]">
+              <span class="text-sm font-bold text-on-surface">{{ bar.value }}</span>
+              <div class="w-full flex justify-center items-end h-full">
+                <div class="w-12 rounded-t-md transition-all group-hover:opacity-80" [ngClass]="bar.color" [style.height.%]="bar.pct"></div>
+              </div>
+              <span class="text-[11px] font-bold text-outline uppercase tracking-tight">{{ bar.label }}</span>
+            </div>
+          } @empty {
+            <p class="text-on-surface-variant text-sm self-center">Sin datos de operaciones.</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna derecha -->
+    <div class="lg:col-span-4 space-y-4">
+      <!-- Acciones Rápidas -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+        <h4 class="text-headline-sm font-bold text-on-surface mb-4">Acciones Rápidas</h4>
+        <div class="grid grid-cols-2 gap-3">
+          <a routerLink="/inventario" class="flex flex-col items-center gap-2 p-3 bg-surface-container-low rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20">
+            <span class="material-symbols-outlined text-primary">inventory_2</span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-on-surface">Inventario</span>
+          </a>
+          <a routerLink="/ventas" class="flex flex-col items-center gap-2 p-3 bg-surface-container-low rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20">
+            <span class="material-symbols-outlined text-primary">point_of_sale</span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-on-surface">Ventas</span>
+          </a>
+          <a routerLink="/devoluciones" class="flex flex-col items-center gap-2 p-3 bg-surface-container-low rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20">
+            <span class="material-symbols-outlined text-primary">assignment_return</span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-on-surface">Devoluciones</span>
+          </a>
+          <a routerLink="/mantenimiento" class="flex flex-col items-center gap-2 p-3 bg-surface-container-low rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/20">
+            <span class="material-symbols-outlined text-primary">build</span>
+            <span class="text-[11px] font-bold uppercase tracking-wide text-on-surface">Mantenimiento</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Actividad Reciente (últimas operaciones) -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+        <h4 class="text-headline-sm font-bold text-on-surface mb-4">Actividad Reciente</h4>
+        <div class="space-y-5">
+          @for (op of actividad(); track op.id) {
+            <div class="flex gap-3">
+              <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white"
+                   [ngClass]="op.tipo_operacion === 'venta' ? 'bg-primary' : 'bg-secondary'">
+                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">
+                  {{ op.tipo_operacion === 'venta' ? 'shopping_cart' : 'handshake' }}
+                </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-label-md font-bold text-on-surface truncate">{{ tipoLabel(op) }} {{ op.codigo_operacion }}</p>
+                <p class="text-[11px] text-on-surface-variant">{{ op.fecha_operacion }} • {{ op.total | currency: 'USD' : 'symbol' : '1.2-2' }}</p>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-on-surface-variant text-sm">Sin actividad reciente.</p>
+          }
+        </div>
+        <a routerLink="/ventas" class="block text-center w-full mt-6 py-2 border border-outline-variant text-xs font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors rounded">
+          VER TODAS LAS OPERACIONES
+        </a>
+      </div>
+
+      <!-- Estado del sistema -->
+      <div class="bg-primary/5 rounded-xl p-4 border border-primary/10">
+        <div class="flex items-center gap-3">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <span class="text-[12px] font-medium text-on-surface">Backend conectado</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-
-@if (error()) {
-  <p class="text-error text-sm mb-3">{{ error() }}</p>
-}
-
-@if (loading()) {
-  <p class="text-on-surface-variant text-sm">Cargando...</p>
-} @else if (data(); as d) {
-  <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Inventario</h3>
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.total_productos | number }}</div>
-      <div class="text-xs text-on-surface-variant">Productos</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.bajo_stock | number }}</div>
-      <div class="text-xs text-on-surface-variant">Bajo stock</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.agotados | number }}</div>
-      <div class="text-xs text-on-surface-variant">Agotados</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.en_mantenimiento | number }}</div>
-      <div class="text-xs text-on-surface-variant">En mantenimiento</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.inventario.valor_total_disponible | currency: 'USD' : 'symbol' : '1.2-2' }}</div>
-      <div class="text-xs text-on-surface-variant">Valor disponible</div>
-    </div>
-  </div>
-
-  <h3 class="text-sm font-bold text-on-surface-variant uppercase tracking-wider mb-2">Operaciones</h3>
-  <div class="grid grid-cols-3 gap-3">
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.activas | number }}</div>
-      <div class="text-xs text-on-surface-variant">Activas</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.finalizadas | number }}</div>
-      <div class="text-xs text-on-surface-variant">Finalizadas</div>
-    </div>
-    <div class="border border-outline-variant rounded-lg p-4">
-      <div class="text-2xl font-bold text-on-surface">{{ d.operaciones.canceladas | number }}</div>
-      <div class="text-xs text-on-surface-variant">Canceladas</div>
-    </div>
-  </div>
-}
