@@ -42,6 +42,21 @@ export class AdminService {
     return this.http.get<Usuario>(`${this.usuariosUrl}/${id}/`);
   }
 
+  getAllUsuarios(): Observable<Usuario[]> {
+    return this.fetchAll<Usuario>(`${this.usuariosUrl}/`);
+  }
+
+  // Alta de usuario (solo-admin). Reusa el endpoint de registro del backend.
+  crearUsuario(data: {
+    username: string;
+    email: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }): Observable<unknown> {
+    return this.http.post(`${this.authUrl}/register/`, data);
+  }
+
   updateUsuario(id: number, data: UsuarioUpdate): Observable<Usuario> {
     return this.http.patch<Usuario>(`${this.usuariosUrl}/${id}/`, data);
   }
