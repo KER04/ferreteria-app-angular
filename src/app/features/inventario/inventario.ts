@@ -1,11 +1,12 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ProductoService, extraerErrorApi } from '../../core/services/producto.service';
 import {
   DashboardResumen,
   Marca,
-  Prestamo,
   ProdEstado,
   Producto,
   ProductoWrite,
@@ -27,7 +28,6 @@ interface ProductoForm {
   prod_stock_minimo: number;
   tipo_categoria: number | '';
   marca: number | '';
-  prestamo: number | '';
 }
 
 function formVacio(): ProductoForm {
@@ -43,7 +43,6 @@ function formVacio(): ProductoForm {
     prod_stock_minimo: 0,
     tipo_categoria: '',
     marca: '',
-    prestamo: '',
   };
 }
 
@@ -56,12 +55,16 @@ function formVacio(): ProductoForm {
 })
 export class Inventario implements OnInit {
   private productoService = inject(ProductoService);
+  private route = inject(ActivatedRoute);
+
+  // Búsqueda en vivo (debounce)
+  searchTerm = '';
+  private search$ = new Subject<string>();
 
   // ── Estado de datos ──────────────────────────────
   productos = signal<Producto[]>([]);
   marcas = signal<Marca[]>([]);
   categorias = signal<TipoCategoria[]>([]);
-  prestamos = signal<Prestamo[]>([]);
   dashboard = signal<DashboardResumen['inventario'] | null>(null);
 
   loading = signal(false);
@@ -117,7 +120,24 @@ export class Inventario implements OnInit {
   ngOnInit(): void {
     this.loadCatalogos();
     this.loadDashboard();
-    this.loadProductos();
+
+    // El buscador del header navega a /inventario?search=... → lo tomamos aquí.
+    // queryParamMap emite de inmediato, así que este es también el primer load.
+    this.route.queryParamMap.subscribe((params) => {
+      this.searchTerm = params.get('search') ?? '';
+      this.page.set(1);
+      this.loadProductos();
+    });
+
+    // Búsqueda en vivo de la propia caja de inventario.
+    this.search$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((term) => {
+      this.searchTerm = term;
+      this.applyFilters();
+    });
+  }
+
+  onSearch(term: string): void {
+    this.search$.next(term);
   }
 
   // ── Cargas ───────────────────────────────────────
@@ -129,10 +149,6 @@ export class Inventario implements OnInit {
     this.productoService.getTodasCategorias().subscribe({
       next: (res) => this.categorias.set(res),
       error: () => this.categorias.set([]),
-    });
-    this.productoService.getTodosPrestamos().subscribe({
-      next: (res) => this.prestamos.set(res),
-      error: () => this.prestamos.set([]),
     });
   }
 
@@ -153,6 +169,7 @@ export class Inventario implements OnInit {
         tipo_categoria: this.categoryFilter,
         prod_estado: this.statusFilter,
         bajo_stock: this.onlyLowStock,
+        search: this.searchTerm.trim() || undefined,
         page: this.page(),
       })
       .subscribe({
@@ -181,7 +198,18 @@ export class Inventario implements OnInit {
     this.categoryFilter = '';
     this.statusFilter = '';
     this.onlyLowStock = false;
+    this.searchTerm = '';
     this.applyFilters();
+  }
+
+  get hasFilters(): boolean {
+    return (
+      !!this.brandFilter ||
+      !!this.categoryFilter ||
+      !!this.statusFilter ||
+      this.onlyLowStock ||
+      !!this.searchTerm.trim()
+    );
   }
 
   goToPage(p: number): void {
@@ -214,7 +242,6 @@ export class Inventario implements OnInit {
       prod_stock_minimo: p.prod_stock_minimo,
       tipo_categoria: p.tipo_categoria,
       marca: p.marca,
-      prestamo: p.prestamo,
     };
     this.fotoFile = null;
     this.fotoPreview.set(p.prod_foto_url);
@@ -257,8 +284,8 @@ export class Inventario implements OnInit {
       this.formError.set('Ingresa un valor unitario válido (mayor o igual a 0).');
       return;
     }
-    if (f.marca === '' || f.tipo_categoria === '' || f.prestamo === '') {
-      this.formError.set('Selecciona marca, categoría y tipo de préstamo.');
+    if (f.marca === '' || f.tipo_categoria === '') {
+      this.formError.set('Selecciona la marca y la categoría.');
       return;
     }
     if (f.prod_cantidad_disponible < 0 || f.prod_stock_minimo < 0) {
@@ -278,7 +305,6 @@ export class Inventario implements OnInit {
       prod_stock_minimo: Number(f.prod_stock_minimo),
       tipo_categoria: f.tipo_categoria,
       marca: f.marca,
-      prestamo: f.prestamo,
     };
 
     this.saving.set(true);

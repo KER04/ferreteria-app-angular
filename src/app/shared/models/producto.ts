@@ -35,8 +35,8 @@ export interface Producto {
   tipo_categoria_nombre: string;
   marca: number;
   marca_nombre: string;
-  prestamo: number;
-  prestamo_nombre: string;
+  prestamo: number | null;
+  prestamo_nombre: string | null;
 }
 
 export interface Marca {
@@ -68,7 +68,7 @@ export interface ProductoWrite {
   prod_stock_minimo: number;
   tipo_categoria: number;
   marca: number;
-  prestamo: number;
+  prestamo?: number | null;
 }
 
 export interface MarcaWrite {

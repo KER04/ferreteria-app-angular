@@ -7,7 +7,9 @@
     </div>
     <input
       type="text"
-      placeholder="Buscar productos, SKU o ventas..."
+      [(ngModel)]="search"
+      (keyup.enter)="buscar()"
+      placeholder="Buscar productos por nombre o código..."
       class="w-full h-10 pl-10 pr-3 bg-surface-container border border-transparent rounded-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 outline-none transition-colors focus:border-primary focus:bg-surface-container-lowest"
     />
   </div>
@@ -32,8 +34,8 @@
     </button>
 
     <div class="hidden sm:flex flex-col items-end leading-tight pl-1">
-      <span class="text-sm font-bold text-on-surface">{{ (user$ | async)?.username || 'Admin' }}</span>
-      <span class="text-[10px] font-semibold uppercase tracking-wider text-primary">Superuser</span>
+      <span class="text-sm font-bold text-on-surface">{{ (user$ | async)?.username || 'Usuario' }}</span>
+      <span class="text-[10px] font-semibold uppercase tracking-wider text-primary">{{ (user$ | async)?.roles?.[0] || 'Usuario' }}</span>
     </div>
   </div>
 </header>

@@ -17,7 +17,19 @@
 </div>
 
 <!-- Barra de filtros -->
-<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6">
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant shadow-sm mb-6 space-y-4">
+  <!-- Búsqueda en vivo -->
+  <div class="relative">
+    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px] pointer-events-none">search</span>
+    <input
+      type="text"
+      [ngModel]="searchTerm"
+      (ngModelChange)="onSearch($event)"
+      placeholder="Buscar producto por nombre o código..."
+      class="w-full h-10 pl-10 pr-3 bg-surface-container-low border border-outline-variant rounded-lg text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+    />
+  </div>
+
   <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
     <!-- Marca -->
     <div class="space-y-1">
@@ -207,9 +219,55 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="px-6 py-12 text-center text-on-surface-variant">
-                <span class="material-symbols-outlined text-4xl text-outline block mb-2">search_off</span>
-                No se encontraron productos con los filtros aplicados.
+              <td colspan="7" class="px-6">
+                @if (hasFilters) {
+                  <div class="py-12 text-center text-on-surface-variant">
+                    <span class="material-symbols-outlined text-4xl text-outline block mb-2">search_off</span>
+                    No se encontraron productos con los filtros aplicados.
+                  </div>
+                } @else {
+                  <!-- Estado vacío: inventario sin productos -->
+                  <div class="py-14 flex flex-col items-center text-center">
+                    <div class="relative w-56 h-44 mb-8">
+                      <div class="absolute inset-0 bg-primary/5 rounded-full blur-3xl"></div>
+                      <div class="relative w-full h-full border-2 border-outline-variant rounded-xl p-6 flex flex-col justify-between overflow-hidden bg-surface-container-lowest shadow-sm">
+                        <div class="h-px w-full bg-outline-variant/50"></div>
+                        <div class="h-px w-full bg-outline-variant/50"></div>
+                        <div class="h-px w-full bg-outline-variant/50"></div>
+                        <div class="absolute inset-0 flex items-center justify-center opacity-20 -rotate-12">
+                          <span class="material-symbols-outlined text-outline" style="font-size: 130px;">inventory_2</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 class="text-headline-md font-bold text-on-surface mb-2">No hay productos aún</h3>
+                    <p class="text-body-md text-on-surface-variant max-w-md mx-auto mb-8">
+                      Tu inventario está vacío. Comienza a registrar tus herramientas, materiales y suministros para gestionar stock y ventas.
+                    </p>
+                    <button type="button" (click)="openCreate()"
+                      class="h-12 px-8 bg-primary text-on-primary rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-primary-container active:scale-95 transition-all">
+                      <span class="material-symbols-outlined">add</span>Añadir primer producto
+                    </button>
+
+                    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl text-left">
+                      <div class="p-4 border border-outline-variant rounded-lg bg-surface-container-low/50">
+                        <span class="material-symbols-outlined text-primary mb-2">qr_code_scanner</span>
+                        <h4 class="font-bold text-sm text-on-surface mb-1">Código auto</h4>
+                        <p class="text-xs text-on-surface-variant">El código del producto se genera solo a partir de categoría y marca.</p>
+                      </div>
+                      <div class="p-4 border border-outline-variant rounded-lg bg-surface-container-low/50">
+                        <span class="material-symbols-outlined text-primary mb-2">category</span>
+                        <h4 class="font-bold text-sm text-on-surface mb-1">Categorías</h4>
+                        <p class="text-xs text-on-surface-variant">Organiza por categoría, marca y tipo de préstamo desde Catálogos.</p>
+                      </div>
+                      <div class="p-4 border border-outline-variant rounded-lg bg-surface-container-low/50">
+                        <span class="material-symbols-outlined text-primary mb-2">notifications_active</span>
+                        <h4 class="font-bold text-sm text-on-surface mb-1">Alertas de stock</h4>
+                        <p class="text-xs text-on-surface-variant">Define el stock mínimo y el sistema marca el bajo stock.</p>
+                      </div>
+                    </div>
+                  </div>
+                }
               </td>
             </tr>
           }
@@ -423,22 +481,6 @@
             </select>
           </div>
 
-          <!-- Préstamo -->
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo de Préstamo *</label>
-            <select
-              name="prestamo"
-              [(ngModel)]="form.prestamo"
-              required
-              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            >
-              <option [ngValue]="''" disabled>Selecciona un tipo de préstamo</option>
-              @for (pr of prestamos(); track pr.pres_id) {
-                <option [ngValue]="pr.pres_id">{{ pr.pres_nombre }} ({{ pr.tipo_prestamo }})</option>
-              }
-            </select>
-          </div>
-
           <!-- Tipo de operación -->
           <div class="space-y-1">
             <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Operación Permitida *</label>
@@ -453,19 +495,21 @@
             </select>
           </div>
 
-          <!-- Estado -->
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado *</label>
-            <select
-              name="prod_estado"
-              [(ngModel)]="form.prod_estado"
-              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            >
-              @for (e of estados; track e) {
-                <option [ngValue]="e">{{ e }}</option>
-              }
-            </select>
-          </div>
+          <!-- Estado (solo al editar; al crear siempre es "Disponible") -->
+          @if (editing()) {
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
+              <select
+                name="prod_estado"
+                [(ngModel)]="form.prod_estado"
+                class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                @for (e of estados; track e) {
+                  <option [ngValue]="e">{{ e }}</option>
+                }
+              </select>
+            </div>
+          }
 
           <!-- Cantidad disponible -->
           <div class="space-y-1">
