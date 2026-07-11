@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MantenimientoService, extraerErrorHttp } from '../../../core/services/mantenimiento.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { Costo } from '../../../shared/models/mantenimiento';
 
 // Plantilla mínima (sin diseño). CRUD de costos de mantenimiento.
@@ -56,6 +57,7 @@ import { Costo } from '../../../shared/models/mantenimiento';
 })
 export class MantenimientoCostos implements OnInit {
   private srv = inject(MantenimientoService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<Costo[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -127,10 +129,18 @@ export class MantenimientoCostos implements OnInit {
   }
 
   remove(c: Costo): void {
-    if (!confirm(`¿Eliminar el costo #${c.cost_id}?`)) return;
-    this.srv.deleteCosto(c.cost_id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el costo.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar costo',
+      message: `¿Eliminar el costo #${c.cost_id}? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteCosto(c.cost_id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el costo.')),
+      });
     });
   }
 }

@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MantenimientoService, extraerErrorHttp } from '../../../core/services/mantenimiento.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { TipoMantenimiento } from '../../../shared/models/mantenimiento';
 
 // Plantilla mínima (sin diseño). CRUD de tipos de mantenimiento.
@@ -51,6 +52,7 @@ import { TipoMantenimiento } from '../../../shared/models/mantenimiento';
 })
 export class MantenimientoTipos implements OnInit {
   private srv = inject(MantenimientoService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<TipoMantenimiento[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -109,10 +111,18 @@ export class MantenimientoTipos implements OnInit {
   }
 
   remove(t: TipoMantenimiento): void {
-    if (!confirm(`¿Eliminar el tipo "${t.tima_nombre}"?`)) return;
-    this.srv.deleteTipo(t.tima_id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el tipo.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar tipo',
+      message: `¿Eliminar el tipo "${t.tima_nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteTipo(t.tima_id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el tipo.')),
+      });
     });
   }
 }

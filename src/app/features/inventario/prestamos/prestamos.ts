@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoService, extraerErrorApi } from '../../../core/services/producto.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { Prestamo } from '../../../shared/models/producto';
 
 // Plantilla mínima (sin diseño). CRUD completo del catálogo de préstamos.
@@ -54,6 +55,7 @@ import { Prestamo } from '../../../shared/models/producto';
 })
 export class Prestamos implements OnInit {
   private srv = inject(ProductoService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<Prestamo[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -117,10 +119,18 @@ export class Prestamos implements OnInit {
   }
 
   remove(p: Prestamo): void {
-    if (!confirm(`¿Eliminar "${p.pres_nombre}"?`)) return;
-    this.srv.deletePrestamo(p.pres_id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar el registro.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar tipo de préstamo',
+      message: `¿Eliminar "${p.pres_nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deletePrestamo(p.pres_id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar el registro.')),
+      });
     });
   }
 }

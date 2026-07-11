@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoService, extraerErrorApi } from '../../../core/services/producto.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { Marca } from '../../../shared/models/producto';
 
 // Plantilla mínima (sin diseño). Lógica CRUD completa contra ProductoService.
@@ -51,6 +52,7 @@ import { Marca } from '../../../shared/models/producto';
 })
 export class Marcas implements OnInit {
   private srv = inject(ProductoService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<Marca[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -109,10 +111,18 @@ export class Marcas implements OnInit {
   }
 
   remove(m: Marca): void {
-    if (!confirm(`¿Eliminar la marca "${m.marca_nombre}"?`)) return;
-    this.srv.deleteMarca(m.marca_id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar la marca.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar marca',
+      message: `¿Eliminar la marca "${m.marca_nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteMarca(m.marca_id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar la marca.')),
+      });
     });
   }
 }

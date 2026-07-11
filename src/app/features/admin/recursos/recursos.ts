@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { adminErrorMessage, isAdminForbidden } from '../admin-errors';
 import { Recurso } from '../../../shared/models/admin';
 
@@ -63,6 +64,7 @@ const PAGE_SIZE = 20;
 })
 export class AdminRecursos implements OnInit {
   private srv = inject(AdminService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<Recurso[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -131,10 +133,18 @@ export class AdminRecursos implements OnInit {
   }
 
   remove(r: Recurso): void {
-    if (!confirm(`¿Eliminar el recurso "${r.nombre}"?`)) return;
-    this.srv.deleteRecurso(r.id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(adminErrorMessage(e, 'No se pudo eliminar el recurso.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar recurso',
+      message: `¿Eliminar el recurso "${r.nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteRecurso(r.id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(adminErrorMessage(e, 'No se pudo eliminar el recurso.')),
+      });
     });
   }
 

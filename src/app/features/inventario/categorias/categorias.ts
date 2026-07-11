@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductoService, extraerErrorApi } from '../../../core/services/producto.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { TipoCategoria } from '../../../shared/models/producto';
 
 // Plantilla mínima (sin diseño). CRUD completo de categorías.
@@ -51,6 +52,7 @@ import { TipoCategoria } from '../../../shared/models/producto';
 })
 export class Categorias implements OnInit {
   private srv = inject(ProductoService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<TipoCategoria[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -109,10 +111,18 @@ export class Categorias implements OnInit {
   }
 
   remove(c: TipoCategoria): void {
-    if (!confirm(`¿Eliminar la categoría "${c.tipr_nombre}"?`)) return;
-    this.srv.deleteCategoria(c.tipr_id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar la categoría.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar categoría',
+      message: `¿Eliminar la categoría "${c.tipr_nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteCategoria(c.tipr_id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(extraerErrorApi(e, 'No se pudo eliminar la categoría.')),
+      });
     });
   }
 }

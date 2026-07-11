@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
+import { ConfirmService } from '../../../core/services/confirm.service';
 import { adminErrorMessage, isAdminForbidden } from '../admin-errors';
 import { Rol } from '../../../shared/models/admin';
 
@@ -63,6 +64,7 @@ const PAGE_SIZE = 20;
 })
 export class AdminRoles implements OnInit {
   private srv = inject(AdminService);
+  private confirmSvc = inject(ConfirmService);
   items = signal<Rol[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -130,10 +132,18 @@ export class AdminRoles implements OnInit {
   }
 
   remove(r: Rol): void {
-    if (!confirm(`¿Eliminar el rol "${r.nombre}"?`)) return;
-    this.srv.deleteRol(r.id).subscribe({
-      next: () => this.load(),
-      error: (e) => this.error.set(adminErrorMessage(e, 'No se pudo eliminar el rol.')),
+    this.confirmSvc.ask({
+      title: 'Eliminar rol',
+      message: `¿Eliminar el rol "${r.nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      tone: 'danger',
+      icon: 'delete_forever',
+    }).then((ok) => {
+      if (!ok) return;
+      this.srv.deleteRol(r.id).subscribe({
+        next: () => this.load(),
+        error: (e) => this.error.set(adminErrorMessage(e, 'No se pudo eliminar el rol.')),
+      });
     });
   }
 
