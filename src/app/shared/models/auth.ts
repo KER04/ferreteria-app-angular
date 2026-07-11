@@ -12,6 +12,7 @@ export interface LoginResponseI {
     id: number;
     username: string;
     email: string;
+    roles?: string[];
   };
 }
 
@@ -41,4 +42,5 @@ export interface UserI {
   id: number;
   username: string;
   email: string;
+  roles?: string[];
 }

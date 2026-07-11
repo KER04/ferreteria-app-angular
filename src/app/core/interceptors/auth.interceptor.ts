@@ -4,7 +4,8 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 // Endpoints de autenticación que NO deben llevar el Bearer ni disparar refresh.
-const AUTH_URLS = ['/api/auth/login', '/api/auth/register', '/api/auth/token/refresh'];
+// (El registro ya NO va aquí: ahora es solo-admin y requiere el token.)
+const AUTH_URLS = ['/api/auth/login', '/api/auth/token/refresh'];
 
 function isAuthUrl(url: string): boolean {
   return AUTH_URLS.some((u) => url.includes(u));

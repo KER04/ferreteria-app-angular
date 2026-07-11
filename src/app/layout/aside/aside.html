@@ -9,7 +9,7 @@
   <!-- Navegación -->
   <nav class="flex-1 py-4 overflow-y-auto">
     <ul class="space-y-1 px-3">
-      @for (item of nav; track item.route) {
+      @for (item of visibleNav(); track item.route) {
         <li>
           <a
             [routerLink]="item.route"

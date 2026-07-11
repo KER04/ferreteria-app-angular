@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { adminGuard } from './core/guards/admin-guard';
 
 export const routes: Routes = [
 
@@ -11,8 +12,8 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login').then(m => m.Login)
   },
   {
-    path: 'register',
-    loadComponent: () => import('./features/auth/register/register').then(m => m.Register)
+    path: 'sin-conexion',
+    loadComponent: () => import('./features/error/sin-conexion/sin-conexion').then(m => m.SinConexion)
   },
 
   // Rutas protegidas dentro del layout
@@ -29,6 +30,10 @@ export const routes: Routes = [
       {
         path: 'inventario',
         loadComponent: () => import('./features/inventario/inventario').then(m => m.Inventario)
+      },
+      {
+        path: 'inventario/catalogos',
+        loadComponent: () => import('./features/inventario/catalogos/catalogos').then(m => m.Catalogos)
       },
       {
         path: 'inventario/marcas',
@@ -78,18 +83,22 @@ export const routes: Routes = [
       // ── Administración ──────────────────────────
       {
         path: 'admin/usuarios',
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/usuarios/usuarios').then(m => m.AdminUsuarios)
       },
       {
         path: 'admin/roles',
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/roles/roles').then(m => m.AdminRoles)
       },
       {
         path: 'admin/recursos',
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/recursos/recursos').then(m => m.AdminRecursos)
       },
       {
         path: 'admin/recursos-rol',
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/recursos-rol/recursos-rol').then(m => m.AdminRecursosRol)
       },
     ]
