@@ -7,14 +7,16 @@
         Administra las entidades maestras del sistema para mantener el orden técnico.
       </p>
     </div>
-    <button
-      type="button"
-      (click)="openCreate()"
-      class="bg-primary text-on-primary h-12 px-6 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md"
-    >
-      <span class="material-symbols-outlined">add_circle</span>
-      Añadir Nuevo
-    </button>
+    @if (isAdmin()) {
+      <button
+        type="button"
+        (click)="openCreate()"
+        class="bg-primary text-on-primary h-12 px-6 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md"
+      >
+        <span class="material-symbols-outlined">add_circle</span>
+        Añadir Nuevo
+      </button>
+    }
   </div>
 
   @if (error()) {
@@ -57,16 +59,15 @@
           <thead class="bg-surface-container">
             <tr>
               <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider">Nombre</th>
-              @if (activeTab() === 'prestamos') {
-                <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider">Tipo</th>
+              @if (isAdmin()) {
+                <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
               }
-              <th class="px-6 py-4 text-label-md text-on-surface-variant uppercase tracking-wider text-right">Acciones</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-outline-variant text-table-data">
             @if (loading()) {
               <tr>
-                <td [attr.colspan]="activeTab() === 'prestamos' ? 3 : 2" class="px-6 py-12 text-center text-on-surface-variant">
+                <td [attr.colspan]="isAdmin() ? 2 : 1" class="px-6 py-12 text-center text-on-surface-variant">
                   <span class="material-symbols-outlined text-3xl animate-spin block mb-2">progress_activity</span>
                   Cargando...
                 </td>
@@ -75,25 +76,28 @@
               @for (row of rows(); track row.id) {
                 <tr class="hover:bg-on-surface-variant/5 transition-colors">
                   <td class="px-6 py-4 font-bold text-on-surface">{{ row.nombre }}</td>
-                  @if (activeTab() === 'prestamos') {
-                    <td class="px-6 py-4 text-on-surface-variant">{{ row.tipo }}</td>
+                  @if (isAdmin()) {
+                    <td class="px-6 py-4 text-right space-x-1">
+                      <button type="button" (click)="openEdit(row)" title="Editar"
+                        class="w-9 h-9 rounded-lg hover:bg-primary-container/20 text-primary transition-colors">
+                        <span class="material-symbols-outlined text-lg">edit</span>
+                      </button>
+                      <button type="button" (click)="remove(row)" title="Eliminar"
+                        class="w-9 h-9 rounded-lg hover:bg-error-container/20 text-error transition-colors">
+                        <span class="material-symbols-outlined text-lg">delete</span>
+                      </button>
+                    </td>
                   }
-                  <td class="px-6 py-4 text-right space-x-1">
-                    <button type="button" (click)="openEdit(row)" title="Editar"
-                      class="w-9 h-9 rounded-lg hover:bg-primary-container/20 text-primary transition-colors">
-                      <span class="material-symbols-outlined text-lg">edit</span>
-                    </button>
-                    <button type="button" (click)="remove(row)" title="Eliminar"
-                      class="w-9 h-9 rounded-lg hover:bg-error-container/20 text-error transition-colors">
-                      <span class="material-symbols-outlined text-lg">delete</span>
-                    </button>
-                  </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td [attr.colspan]="activeTab() === 'prestamos' ? 3 : 2" class="px-6 py-12 text-center text-on-surface-variant">
+                  <td [attr.colspan]="isAdmin() ? 2 : 1" class="px-6 py-12 text-center text-on-surface-variant">
                     <span class="material-symbols-outlined text-3xl text-outline block mb-2">inbox</span>
-                    No hay registros. Usa «Añadir Nuevo» para crear uno.
+                    @if (isAdmin()) {
+                      No hay registros. Usa «Añadir Nuevo» para crear uno.
+                    } @else {
+                      No hay registros.
+                    }
                   </td>
                 </tr>
               }
@@ -105,7 +109,7 @@
   </div>
 
   <!-- Ayuda contextual -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
     <div class="p-6 bg-primary-container/10 border border-primary/20 rounded-xl">
       <div class="flex items-center gap-2 text-primary mb-2">
         <span class="material-symbols-outlined">info</span>
@@ -122,15 +126,6 @@
       </div>
       <p class="text-sm text-on-surface-variant leading-relaxed">
         Las marcas facilitan la búsqueda rápida por parte del personal de mostrador durante el proceso de venta.
-      </p>
-    </div>
-    <div class="p-6 bg-tertiary-container/10 border border-tertiary/20 rounded-xl">
-      <div class="flex items-center gap-2 text-tertiary mb-2">
-        <span class="material-symbols-outlined">policy</span>
-        <span class="font-bold">Tipos de Préstamo</span>
-      </div>
-      <p class="text-sm text-on-surface-variant leading-relaxed">
-        Defina plazos y condiciones para herramientas en consignación o préstamos industriales a contratistas.
       </p>
     </div>
   </div>
@@ -168,20 +163,6 @@
             class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
           />
         </div>
-
-        @if (activeTab() === 'prestamos') {
-          <div class="space-y-1">
-            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tipo de préstamo *</label>
-            <input
-              type="text"
-              name="fTipo"
-              [(ngModel)]="fTipo"
-              maxlength="45"
-              placeholder="Ej. Corto plazo, Consignación..."
-              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-            />
-          </div>
-        }
 
         <div class="flex items-center justify-end gap-3 pt-2">
           <button type="button" (click)="closeModal()" [disabled]="saving()"

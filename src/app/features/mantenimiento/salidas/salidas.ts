@@ -107,7 +107,7 @@ const PAGE_SIZE = 8;
                       </div>
                     </td>
                     <td class="px-6 py-4 text-right font-bold">{{ (s.costo_info?.cost_total ?? 0) | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
-                    <td class="px-6 py-4 text-center"><span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[12px] font-bold">Finalizado</span></td>
+                    <td class="px-6 py-4 text-center"><span class="px-3 py-1 bg-green-500/15 text-green-400 rounded-full text-[12px] font-bold">Finalizado</span></td>
                   </tr>
                 } @empty {
                   <tr><td colspan="5" class="px-6 py-12 text-center text-on-surface-variant">
@@ -123,7 +123,7 @@ const PAGE_SIZE = 8;
           <div class="flex gap-2">
             <button (click)="goToPage(page() - 1)" [disabled]="page() === 1" class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-variant transition-colors disabled:opacity-40"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
             @for (n of pages(); track n) {
-              <button (click)="goToPage(n)" [ngClass]="n === page() ? 'bg-primary text-white border-primary' : 'border-outline-variant hover:bg-surface-variant'" class="w-8 h-8 flex items-center justify-center rounded border text-sm transition-colors">{{ n }}</button>
+              <button (click)="goToPage(n)" [ngClass]="n === page() ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant hover:bg-surface-variant'" class="w-8 h-8 flex items-center justify-center rounded border text-sm transition-colors">{{ n }}</button>
             }
             <button (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()" class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant hover:bg-surface-variant transition-colors disabled:opacity-40"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
           </div>

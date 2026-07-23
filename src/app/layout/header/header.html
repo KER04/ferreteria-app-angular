@@ -1,7 +1,13 @@
 <header class="sticky top-0 z-20 h-16 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between gap-4 px-6">
 
-  <!-- Búsqueda -->
-  <div class="relative w-full max-w-md">
+  <!-- Marca ERP -->
+  <div class="flex items-center gap-2 shrink-0">
+    <span class="material-symbols-outlined text-primary text-[26px]">hardware</span>
+    <span class="font-extrabold text-on-surface tracking-tight hidden md:inline">Ferretex Pro <span class="text-primary">ERP</span></span>
+  </div>
+
+  <!-- Búsqueda global -->
+  <div class="relative flex-1 max-w-xl">
     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
       <span class="material-symbols-outlined text-outline text-[20px]">search</span>
     </div>
@@ -15,25 +21,35 @@
   </div>
 
   <!-- Acciones -->
-  <div class="flex items-center gap-2 sm:gap-4">
+  <div class="flex items-center gap-1 sm:gap-2 shrink-0">
+    <button
+      type="button"
+      aria-label="Historial"
+      class="hidden sm:flex w-10 h-10 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
+    >
+      <span class="material-symbols-outlined text-[22px]">history</span>
+    </button>
+
     <button
       type="button"
       aria-label="Notificaciones"
       class="relative w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
     >
       <span class="material-symbols-outlined text-[22px]">notifications</span>
-      <span class="absolute top-2 right-2 w-2 h-2 bg-secondary-container rounded-full ring-2 ring-surface-container-lowest"></span>
+      <span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full ring-2 ring-surface-container-lowest"></span>
     </button>
+
+    <div class="w-px h-6 bg-outline-variant mx-1 hidden sm:block"></div>
 
     <button
       type="button"
       aria-label="Cuenta"
-      class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors"
+      class="w-9 h-9 flex items-center justify-center rounded-full bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
     >
-      <span class="material-symbols-outlined text-[24px]">account_circle</span>
+      <span class="material-symbols-outlined text-[22px]">account_circle</span>
     </button>
 
-    <div class="hidden sm:flex flex-col items-end leading-tight pl-1">
+    <div class="hidden sm:flex flex-col items-start leading-tight pl-1">
       <span class="text-sm font-bold text-on-surface">{{ (user$ | async)?.username || 'Usuario' }}</span>
       <span class="text-[10px] font-semibold uppercase tracking-wider text-primary">{{ (user$ | async)?.roles?.[0] || 'Usuario' }}</span>
     </div>

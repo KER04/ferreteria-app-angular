@@ -110,9 +110,10 @@
                   <td class="px-6 py-4">
                     <div class="flex flex-wrap gap-1">
                       @for (r of u.roles; track r.id) {
-                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"
+                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border"
                           [ngClass]="(r.nombre.toLowerCase() === 'administrador' || r.nombre.toLowerCase() === 'admin')
-                            ? 'bg-primary-fixed text-on-primary-fixed' : 'bg-surface-container-high text-on-surface-variant'">{{ r.nombre }}</span>
+                            ? 'bg-violet-500/15 text-violet-300 border-violet-500/30'
+                            : 'bg-blue-500/15 text-blue-300 border-blue-500/30'">{{ r.nombre }}</span>
                       } @empty { <span class="text-xs text-on-surface-variant">Sin rol</span> }
                     </div>
                   </td>
@@ -132,7 +133,7 @@
                       <button type="button" (click)="toggleDisponibilidad(u)" [disabled]="toggling() === u.id"
                         [title]="u.disponibilidad ? 'Desactivar' : 'Activar'"
                         class="p-2 rounded-lg transition-all disabled:opacity-40"
-                        [ngClass]="u.disponibilidad ? 'hover:bg-error/10 text-error' : 'hover:bg-green-100 text-green-600'">
+                        [ngClass]="u.disponibilidad ? 'hover:bg-error/10 text-error' : 'hover:bg-green-500/15 text-green-600'">
                         <span class="material-symbols-outlined text-[20px]">{{ u.disponibilidad ? 'block' : 'person_check' }}</span>
                       </button>
                       <button type="button" (click)="askDelete(u)" title="Eliminar"
@@ -169,26 +170,32 @@
 
     <!-- Teaser de roles / recursos -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-8 bg-primary-container p-8 rounded-2xl text-on-primary relative overflow-hidden flex flex-col justify-center min-h-[200px]">
+      <!-- Roles y privilegios -->
+      <div class="lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-2xl p-8 relative overflow-hidden flex flex-col justify-center min-h-[200px]">
         <div class="relative z-10 space-y-4">
-          <h3 class="text-headline-md font-bold">Configuración de Roles y Privilegios</h3>
-          <p class="max-w-xl opacity-90">Define qué puede ver y hacer cada tipo de usuario. Gestiona roles y los recursos (rutas) asignados a cada uno.</p>
-          <div class="flex flex-wrap gap-4">
-            <a routerLink="/admin/roles" class="bg-surface text-primary px-6 py-2.5 rounded-lg font-bold hover:brightness-95 transition-all">Gestionar Roles</a>
-            <a routerLink="/admin/recursos-rol" class="border border-surface text-surface px-6 py-2.5 rounded-lg font-bold hover:bg-surface/10 transition-all">Recursos por Rol</a>
+          <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined">shield_person</span></div>
+            <h3 class="text-headline-sm font-bold text-on-surface">Configuración de Roles y Privilegios</h3>
+          </div>
+          <p class="max-w-xl text-on-surface-variant text-sm">Define qué puede ver y hacer cada tipo de usuario. Gestiona roles y los recursos (rutas) asignados a cada uno.</p>
+          <div class="flex flex-wrap gap-3 pt-1">
+            <a routerLink="/admin/roles" class="bg-primary text-on-primary px-6 py-2.5 rounded-lg font-bold hover:opacity-90 active:scale-95 transition-all">Gestionar Roles</a>
+            <a routerLink="/admin/recursos-rol" class="border border-outline-variant text-on-surface px-6 py-2.5 rounded-lg font-bold hover:bg-surface-container-high transition-all">Recursos por Rol</a>
           </div>
         </div>
-        <span class="material-symbols-outlined absolute -right-8 -bottom-8 text-[200px] opacity-10 pointer-events-none select-none">security</span>
+        <span class="material-symbols-outlined absolute -right-8 -bottom-8 text-[200px] text-primary/5 pointer-events-none select-none">security</span>
       </div>
-      <div class="lg:col-span-4 bg-secondary-fixed text-on-secondary-fixed p-8 rounded-2xl flex flex-col justify-between">
+
+      <!-- Tip de seguridad -->
+      <div class="lg:col-span-4 bg-surface-container-lowest border border-outline-variant border-l-4 border-l-secondary rounded-2xl p-6 flex flex-col justify-between">
         <div>
-          <div class="flex items-center gap-2 mb-4">
+          <div class="flex items-center gap-2 mb-3 text-secondary">
             <span class="material-symbols-outlined">tips_and_updates</span>
             <span class="font-bold uppercase tracking-widest text-xs">Tip de Seguridad</span>
           </div>
-          <p class="font-medium text-lg leading-relaxed">Desactiva a un usuario con el botón de bloqueo para revocar su acceso sin eliminarlo.</p>
+          <p class="text-on-surface text-sm leading-relaxed">Desactiva a un usuario con el botón de bloqueo para revocar su acceso sin eliminarlo.</p>
         </div>
-        <a routerLink="/admin/recursos" class="flex items-center gap-2 font-bold text-sm mt-4 hover:underline">
+        <a routerLink="/admin/recursos" class="inline-flex items-center gap-2 font-bold text-sm mt-4 text-primary hover:gap-3 transition-all">
           Gestionar recursos<span class="material-symbols-outlined text-sm">arrow_forward</span>
         </a>
       </div>

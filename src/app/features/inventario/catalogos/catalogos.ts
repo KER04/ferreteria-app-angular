@@ -2,11 +2,13 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable, forkJoin } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ProductoService, extraerErrorApi } from '../../../core/services/producto.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
-import { Marca, Prestamo, TipoCategoria } from '../../../shared/models/producto';
+import { AuthService } from '../../../core/services/auth.service';
+import { Marca, TipoCategoria } from '../../../shared/models/producto';
 
-type TabKey = 'categorias' | 'marcas' | 'prestamos';
+type TabKey = 'categorias' | 'marcas';
 
 interface TabMeta {
   key: TabKey;
@@ -18,7 +20,6 @@ interface TabMeta {
 interface Row {
   id: number;
   nombre: string;
-  tipo?: string;
 }
 
 @Component({
@@ -31,18 +32,21 @@ interface Row {
 export class Catalogos implements OnInit {
   private srv = inject(ProductoService);
   private confirmSvc = inject(ConfirmService);
+  private auth = inject(AuthService);
+
+  // El backend usa IsAdminOrReadOnly: sin rol admin, escribir devuelve 403.
+  // Ocultamos las acciones en vez de dejar que el usuario choque con el error.
+  isAdmin = toSignal(this.auth.isAdmin$, { initialValue: false });
 
   readonly tabs: TabMeta[] = [
     { key: 'categorias', label: 'Categorías', icon: 'category', title: 'Categorías de Producto' },
     { key: 'marcas', label: 'Marcas', icon: 'branding_watermark', title: 'Marcas Registradas' },
-    { key: 'prestamos', label: 'Tipos de Préstamo', icon: 'handshake', title: 'Tipos de Préstamo' },
   ];
 
   activeTab = signal<TabKey>('categorias');
 
   categorias = signal<TipoCategoria[]>([]);
   marcas = signal<Marca[]>([]);
-  prestamos = signal<Prestamo[]>([]);
 
   loading = signal(false);
   error = signal<string | null>(null);
@@ -53,7 +57,6 @@ export class Catalogos implements OnInit {
   saving = signal(false);
   modalError = signal<string | null>(null);
   fNombre = '';
-  fTipo = '';
 
   // ── Derivados ────────────────────────────────────
   currentMeta = computed(() => this.tabs.find((t) => t.key === this.activeTab())!);
@@ -64,8 +67,6 @@ export class Catalogos implements OnInit {
         return this.categorias().map((c) => ({ id: c.tipr_id, nombre: c.tipr_nombre }));
       case 'marcas':
         return this.marcas().map((m) => ({ id: m.marca_id, nombre: m.marca_nombre }));
-      case 'prestamos':
-        return this.prestamos().map((p) => ({ id: p.pres_id, nombre: p.pres_nombre, tipo: p.tipo_prestamo }));
     }
   });
 
@@ -74,9 +75,7 @@ export class Catalogos implements OnInit {
   }
 
   tabCount(key: TabKey): number {
-    if (key === 'categorias') return this.categorias().length;
-    if (key === 'marcas') return this.marcas().length;
-    return this.prestamos().length;
+    return key === 'categorias' ? this.categorias().length : this.marcas().length;
   }
 
   loadAll(): void {
@@ -85,12 +84,10 @@ export class Catalogos implements OnInit {
     forkJoin({
       categorias: this.srv.getTodasCategorias(),
       marcas: this.srv.getTodasMarcas(),
-      prestamos: this.srv.getTodosPrestamos(),
     }).subscribe({
       next: (r) => {
         this.categorias.set(r.categorias);
         this.marcas.set(r.marcas);
-        this.prestamos.set(r.prestamos);
         this.loading.set(false);
       },
       error: (e) => {
@@ -108,7 +105,6 @@ export class Catalogos implements OnInit {
   openCreate(): void {
     this.editingId.set(null);
     this.fNombre = '';
-    this.fTipo = '';
     this.modalError.set(null);
     this.modalOpen.set(true);
   }
@@ -116,7 +112,6 @@ export class Catalogos implements OnInit {
   openEdit(row: Row): void {
     this.editingId.set(row.id);
     this.fNombre = row.nombre;
-    this.fTipo = row.tipo ?? '';
     this.modalError.set(null);
     this.modalOpen.set(true);
   }
@@ -132,26 +127,18 @@ export class Catalogos implements OnInit {
       this.modalError.set('El nombre es obligatorio.');
       return;
     }
-    const tab = this.activeTab();
-    if (tab === 'prestamos' && !this.fTipo.trim()) {
-      this.modalError.set('El tipo de préstamo es obligatorio.');
-      return;
-    }
 
     this.saving.set(true);
     this.modalError.set(null);
     const id = this.editingId();
 
     let req$: Observable<unknown>;
-    if (tab === 'categorias') {
+    if (this.activeTab() === 'categorias') {
       const body = { tipr_nombre: nombre };
       req$ = id ? this.srv.updateCategoria(id, body) : this.srv.createCategoria(body);
-    } else if (tab === 'marcas') {
+    } else {
       const body = { marca_nombre: nombre };
       req$ = id ? this.srv.updateMarca(id, body) : this.srv.createMarca(body);
-    } else {
-      const body = { pres_nombre: nombre, tipo_prestamo: this.fTipo.trim() };
-      req$ = id ? this.srv.updatePrestamo(id, body) : this.srv.createPrestamo(body);
     }
 
     req$.subscribe({
@@ -176,13 +163,10 @@ export class Catalogos implements OnInit {
       icon: 'delete_forever',
     }).then((ok) => {
       if (!ok) return;
-      const tab = this.activeTab();
       const req$ =
-        tab === 'categorias'
+        this.activeTab() === 'categorias'
           ? this.srv.deleteCategoria(row.id)
-          : tab === 'marcas'
-            ? this.srv.deleteMarca(row.id)
-            : this.srv.deletePrestamo(row.id);
+          : this.srv.deleteMarca(row.id);
 
       req$.subscribe({
         next: () => this.loadAll(),

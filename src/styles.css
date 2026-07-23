@@ -1,65 +1,67 @@
 /* You can add global styles to this file, and also import other style files */
 @import "tailwindcss";
 
-/* ===== Design tokens — "Gestión Industrial" (ver DESIGN.md) ===== */
+/* ===== Design tokens — "Emerald Precision" (ProHardware ERP, tema oscuro) ===== */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Surfaces */
-  --color-surface: #faf8ff;
-  --color-surface-dim: #dad9e1;
-  --color-surface-bright: #faf8ff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f4f3fa;
-  --color-surface-container: #eeedf4;
-  --color-surface-container-high: #e9e7ef;
-  --color-surface-container-highest: #e3e1e9;
-  --color-surface-variant: #e3e1e9;
-  --color-on-surface: #1a1b21;
-  --color-on-surface-variant: #444651;
-  --color-inverse-surface: #2f3036;
-  --color-inverse-on-surface: #f1f0f7;
+  /* Surfaces (slate/navy oscuros) */
+  --color-surface: #0f172a;
+  --color-surface-dim: #0b1120;
+  --color-surface-bright: #1e293b;
+  --color-surface-container-lowest: #131c2e;
+  --color-surface-container-low: #172033;
+  --color-surface-container: #1e293b;
+  --color-surface-container-high: #273449;
+  --color-surface-container-highest: #334155;
+  --color-surface-variant: #334155;
+  --color-on-surface: #e2e8f0;
+  --color-on-surface-variant: #94a3b8;
+  /* Se mantiene oscuro a propósito: el sidebar lo usa como fondo. */
+  --color-inverse-surface: #0b1120;
+  --color-inverse-on-surface: #e2e8f0;
 
   /* Outlines */
-  --color-outline: #757682;
-  --color-outline-variant: #c5c5d3;
+  --color-outline: #475569;
+  --color-outline-variant: #26324a;
 
-  /* Primary */
-  --color-primary: #00236f;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #1e3a8a;
-  --color-on-primary-container: #90a8ff;
-  --color-inverse-primary: #b6c4ff;
-  --color-primary-fixed: #dce1ff;
-  --color-primary-fixed-dim: #b6c4ff;
-  --color-on-primary-fixed: #00164e;
-  --color-on-primary-fixed-variant: #264191;
+  /* Primary (verde esmeralda vibrante) */
+  --color-primary: #10b981;
+  --color-on-primary: #022c1a;
+  --color-primary-container: #047857;
+  --color-on-primary-container: #a7f3d0;
+  --color-inverse-primary: #059669;
+  --color-primary-fixed: #6ee7b7;
+  --color-primary-fixed-dim: #34d399;
+  --color-on-primary-fixed: #022c22;
+  --color-on-primary-fixed-variant: #065f46;
 
-  /* Secondary (Amber) */
-  --color-secondary: #904d00;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #fe932c;
-  --color-on-secondary-container: #663500;
-  --color-secondary-fixed: #ffdcc3;
-  --color-secondary-fixed-dim: #ffb77d;
-  --color-on-secondary-fixed: #2f1500;
-  --color-on-secondary-fixed-variant: #6e3900;
+  /* Secondary (ámbar — avisos / en proceso) */
+  --color-secondary: #fbbf24;
+  --color-on-secondary: #422006;
+  --color-secondary-container: #b45309;
+  --color-on-secondary-container: #fde68a;
+  --color-secondary-fixed: #fde68a;
+  --color-secondary-fixed-dim: #fbbf24;
+  --color-on-secondary-fixed: #451a03;
+  --color-on-secondary-fixed-variant: #92400e;
 
-  /* Tertiary */
-  --color-tertiary: #4b1c00;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #6e2c00;
-  --color-on-tertiary-container: #f39461;
+  /* Tertiary (lima — acento) */
+  --color-tertiary: #a3e635;
+  --color-on-tertiary: #1a2e05;
+  --color-tertiary-container: #4d7c0f;
+  --color-on-tertiary-container: #d9f99d;
 
-  /* Error */
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
+  /* Error (rojo aclarado para fondo oscuro) */
+  --color-error: #f87171;
+  --color-on-error: #450a0a;
+  --color-error-container: #7f1d1d;
+  --color-on-error-container: #fecaca;
 
   /* Background */
-  --color-background: #faf8ff;
-  --color-on-background: #1a1b21;
+  --color-background: #0f172a;
+  --color-on-background: #e2e8f0;
 
   /* Typography scale */
   --text-headline-md: 24px;
@@ -76,6 +78,23 @@
   --text-label-md--line-height: 1.4;
   --text-label-md--letter-spacing: 0.02em;
   --text-label-md--font-weight: 500;
+}
+
+/* ===== Base global (tema oscuro único) ===== */
+:root { color-scheme: dark; }
+
+html, body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-sans);
+}
+
+/* Grid industrial punteado reutilizable (fondo técnico ERP) */
+.industrial-grid {
+  background-image:
+    linear-gradient(#26324a 1px, transparent 1px),
+    linear-gradient(90deg, #26324a 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 /* Material Symbols icon font */

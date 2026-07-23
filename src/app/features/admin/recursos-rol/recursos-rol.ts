@@ -18,7 +18,7 @@ import { Recurso, RecursoRol, Rol } from '../../../shared/models/admin';
     </div>
 
     @if (error()) { <p class="text-error text-sm mb-3">{{ error() }}</p> }
-    @if (successMsg()) { <p class="text-green-700 text-sm mb-3">{{ successMsg() }}</p> }
+    @if (successMsg()) { <p class="text-green-400 text-sm mb-3">{{ successMsg() }}</p> }
 
     @if (!forbidden()) {
       <div class="flex flex-wrap items-end gap-2 mb-4">

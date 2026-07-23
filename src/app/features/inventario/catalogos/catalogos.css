@@ -1,5 +1,5 @@
 .active-tab {
-  border-color: #00236f !important;
+  border-color: #6ee7b7 !important;          /* mint (primary) */
   border-width: 2px !important;
-  background-color: #dce1ff !important;
+  background-color: rgba(110, 231, 183, 0.12) !important; /* mint translúcido */
 }

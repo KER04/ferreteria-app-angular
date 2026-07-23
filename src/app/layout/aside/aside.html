@@ -9,20 +9,58 @@
   <!-- Navegación -->
   <nav class="flex-1 py-4 overflow-y-auto">
     <ul class="space-y-1 px-3">
-      @for (item of visibleNav(); track item.route) {
+      @for (item of visibleNav(); track item.label) {
         <li>
-          <a
-            [routerLink]="item.route"
-            routerLinkActive
-            #rla="routerLinkActive"
-            [ngClass]="rla.isActive
-              ? 'bg-white/10 text-white border-primary-fixed-dim font-semibold'
-              : 'text-inverse-on-surface/60 border-transparent hover:bg-white/5 hover:text-white'"
-            class="flex items-center gap-3 h-12 pl-4 pr-3 border-l-4 rounded-sm transition-colors"
-          >
-            <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
-            <span class="text-label-md">{{ item.label }}</span>
-          </a>
+          @if (item.route) {
+            <!-- Ítem directo -->
+            <a
+              [routerLink]="item.route"
+              routerLinkActive
+              #rla="routerLinkActive"
+              [routerLinkActiveOptions]="{ exact: true }"
+              [ngClass]="rla.isActive
+                ? 'bg-white/10 text-white border-primary-fixed-dim font-semibold'
+                : 'text-inverse-on-surface/60 border-transparent hover:bg-white/5 hover:text-white'"
+              class="flex items-center gap-3 h-12 pl-4 pr-3 border-l-4 rounded-sm transition-colors"
+            >
+              <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+              <span class="text-label-md">{{ item.label }}</span>
+            </a>
+          } @else {
+            <!-- Grupo colapsable -->
+            <button
+              type="button"
+              (click)="toggleGroup(item.label)"
+              [ngClass]="isOpen(item.label) ? 'text-white' : 'text-inverse-on-surface/70'"
+              class="w-full flex items-center gap-3 h-12 pl-4 pr-3 border-l-4 border-transparent rounded-sm transition-colors hover:bg-white/5 hover:text-white"
+            >
+              <span class="material-symbols-outlined text-[22px]">{{ item.icon }}</span>
+              <span class="text-label-md flex-1 text-left">{{ item.label }}</span>
+              <span class="material-symbols-outlined text-[20px] transition-transform" [class.rotate-180]="isOpen(item.label)">expand_more</span>
+            </button>
+
+            @if (isOpen(item.label)) {
+              <ul class="mt-1 mb-1 ml-5 pl-3 border-l border-white/10 space-y-0.5">
+                @for (child of item.children; track child.route) {
+                  <li>
+                    <a
+                      [routerLink]="child.route"
+                      routerLinkActive
+                      #crla="routerLinkActive"
+                      [routerLinkActiveOptions]="{ exact: true }"
+                      [ngClass]="crla.isActive
+                        ? 'text-white font-semibold bg-white/10'
+                        : 'text-inverse-on-surface/60 hover:bg-white/5 hover:text-white'"
+                      class="flex items-center gap-2 h-10 px-3 rounded-sm transition-colors text-label-md"
+                    >
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0" [ngClass]="crla.isActive ? 'bg-primary-fixed-dim' : 'bg-inverse-on-surface/30'"></span>
+                      {{ child.label }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          }
         </li>
       }
     </ul>
