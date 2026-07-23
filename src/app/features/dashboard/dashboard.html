@@ -1,12 +1,12 @@
-<div class="space-y-4">
+<div class="space-y-6">
   <!-- Encabezado -->
   <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
     <div>
-      <h2 class="text-headline-md font-bold text-on-surface">Panel de Control</h2>
+      <h2 class="text-headline-md font-extrabold text-on-surface tracking-tight">Panel de Control</h2>
       <p class="text-on-surface-variant text-body-md">Resumen operativo al {{ hoy | date: 'longDate' }}</p>
     </div>
     <a routerLink="/ventas"
-       class="bg-primary text-on-primary px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold hover:opacity-90 active:scale-[0.98] transition-all">
+       class="bg-primary text-on-primary px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-md">
       <span class="material-symbols-outlined text-[20px]">add</span>
       Nueva Venta
     </a>
@@ -18,124 +18,181 @@
     </div>
   }
 
-  <!-- KPIs -->
+  <!-- ══════════ KPIs ══════════ -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary/30 transition-colors">
-      <div class="p-2 bg-primary/10 rounded-lg text-primary w-fit mb-4"><span class="material-symbols-outlined">inventory</span></div>
-      <p class="text-on-surface-variant text-label-md font-medium">Total Productos</p>
-      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.total_productos ?? 0) | number }}</h3>
+    <!-- Total productos -->
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary/40 transition-colors">
+      <div class="flex items-start justify-between mb-4">
+        <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Total Productos</span>
+        <div class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined text-[20px]">inventory_2</span></div>
+      </div>
+      <h3 class="text-4xl font-extrabold text-on-surface">{{ (resumen()?.inventario?.total_productos ?? 0) | number }}</h3>
       <p class="text-[11px] text-outline mt-2">Registrados en el sistema</p>
     </div>
 
-    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-secondary/30 transition-colors">
-      <div class="flex justify-between items-start mb-4">
-        <div class="p-2 bg-secondary/10 rounded-lg text-secondary"><span class="material-symbols-outlined">warning</span></div>
+    <!-- Stock bajo (con barra de acento) -->
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-secondary/40 transition-colors">
+      <div class="flex items-start justify-between mb-4">
+        <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Stock Bajo</span>
+        <div class="p-2 bg-secondary/10 rounded-lg text-secondary"><span class="material-symbols-outlined text-[20px]">warning</span></div>
+      </div>
+      <div class="flex items-end justify-between">
+        <h3 class="text-4xl font-extrabold text-secondary">{{ (resumen()?.inventario?.bajo_stock ?? 0) | number }}</h3>
         @if ((resumen()?.inventario?.bajo_stock ?? 0) > 0) {
-          <span class="text-error text-xs font-bold">Crítico</span>
+          <span class="text-error text-xs font-bold uppercase tracking-wide mb-1">Crítico</span>
         }
       </div>
-      <p class="text-on-surface-variant text-label-md font-medium">Stock Bajo</p>
-      <h3 class="text-3xl font-bold text-secondary mt-1">{{ (resumen()?.inventario?.bajo_stock ?? 0) | number }}</h3>
-      <p class="text-[11px] text-outline mt-2">Requieren reabastecimiento</p>
+      <div class="mt-3 h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+        <div class="h-full bg-secondary rounded-full transition-all" [style.width.%]="stockRatio()"></div>
+      </div>
+      <p class="text-[11px] text-outline mt-2">{{ stockRatio() }}% del inventario requiere reabasto</p>
     </div>
 
-    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-tertiary/30 transition-colors">
-      <div class="p-2 bg-tertiary-container/10 rounded-lg text-tertiary w-fit mb-4"><span class="material-symbols-outlined">build</span></div>
-      <p class="text-on-surface-variant text-label-md font-medium">En Mantenimiento</p>
-      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.en_mantenimiento ?? 0) | number }}</h3>
+    <!-- En mantenimiento -->
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-tertiary/40 transition-colors">
+      <div class="flex items-start justify-between mb-4">
+        <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-bold">En Mantenimiento</span>
+        <div class="p-2 bg-tertiary/10 rounded-lg text-tertiary"><span class="material-symbols-outlined text-[20px]">build</span></div>
+      </div>
+      <h3 class="text-4xl font-extrabold text-on-surface">{{ (resumen()?.inventario?.en_mantenimiento ?? 0) | number }}</h3>
       <p class="text-[11px] text-outline mt-2">Equipos fuera de servicio</p>
     </div>
 
-    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary-container/30 transition-colors">
-      <div class="p-2 bg-primary-container/10 rounded-lg text-primary-container w-fit mb-4"><span class="material-symbols-outlined">payments</span></div>
-      <p class="text-on-surface-variant text-label-md font-medium">Valor Inventario</p>
-      <h3 class="text-3xl font-bold text-on-surface mt-1">{{ (resumen()?.inventario?.valor_total_disponible ?? 0) | currency: 'USD' : 'symbol' : '1.0-0' }}</h3>
+    <!-- Valor inventario -->
+    <div class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm hover:border-primary/40 transition-colors">
+      <div class="flex items-start justify-between mb-4">
+        <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-bold">Valor Inventario</span>
+        <div class="p-2 bg-primary/10 rounded-lg text-primary"><span class="material-symbols-outlined text-[20px]">payments</span></div>
+      </div>
+      <h3 class="text-4xl font-extrabold text-primary">{{ (resumen()?.inventario?.valor_total_disponible ?? 0) | currency: 'USD' : 'symbol' : '1.0-0' }}</h3>
       <p class="text-[11px] text-outline mt-2">Precio de costo disponible</p>
     </div>
   </div>
 
-  <!-- Área principal -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+  <!-- ══════════ Área principal ══════════ -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Columna izquierda -->
-    <div class="lg:col-span-8 space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Stock Bajo -->
-        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col h-[400px]">
-          <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
-            <h4 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-secondary">error</span> Stock Bajo
-            </h4>
-            <a routerLink="/inventario" class="text-primary text-xs font-bold hover:underline">Ver todo</a>
+    <div class="lg:col-span-8 space-y-6">
+      <!-- Gráfica de operaciones -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-6">
+          <div>
+            <h4 class="text-headline-sm font-bold text-on-surface">Resumen de Operaciones</h4>
+            <p class="text-on-surface-variant text-sm">Distribución por estado · {{ totalOps() | number }} operaciones totales</p>
           </div>
-          <div class="flex-1 overflow-y-auto divide-y divide-outline-variant/40">
-            @for (p of lowStock(); track p.prod_id) {
-              <div class="flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors">
-                <div>
-                  <p class="text-label-md font-bold text-on-surface">{{ p.prod_nombre }}</p>
-                  <p class="text-[12px] text-on-surface-variant font-mono">{{ p.codigo_producto }}</p>
-                </div>
-                <span class="px-2 py-1 rounded text-[11px] font-bold"
-                      [ngClass]="p.prod_cantidad_disponible === 0 ? 'bg-error-container text-on-error-container' : 'bg-secondary-container text-on-secondary-container'">
-                  {{ p.prod_cantidad_disponible }} u.
-                </span>
-              </div>
-            } @empty {
-              <div class="p-6 text-center text-on-surface-variant text-sm">Sin productos en stock bajo. 👍</div>
-            }
+          <div class="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wide">
+            <span class="flex items-center gap-1.5 text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-sm bg-primary"></span>Activas</span>
+            <span class="flex items-center gap-1.5 text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-sm bg-tertiary"></span>Finalizadas</span>
+            <span class="flex items-center gap-1.5 text-on-surface-variant"><span class="w-2.5 h-2.5 rounded-sm bg-error"></span>Canceladas</span>
           </div>
         </div>
 
-        <!-- Préstamos Vencidos -->
-        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col h-[400px]">
-          <div class="p-4 bg-surface-container-low border-b border-outline-variant flex justify-between items-center">
-            <h4 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
-              <span class="material-symbols-outlined text-error">assignment_late</span> Préstamos Vencidos
-            </h4>
-            <a routerLink="/ventas/vencidos" class="text-primary text-xs font-bold hover:underline">Gestionar</a>
+        <div class="relative h-56">
+          <!-- líneas de referencia -->
+          <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+            <div class="border-t border-outline-variant/40"></div>
+            <div class="border-t border-outline-variant/40"></div>
+            <div class="border-t border-outline-variant/40"></div>
+            <div class="border-t border-outline-variant/40"></div>
           </div>
-          <div class="flex-1 overflow-y-auto p-4 space-y-3">
-            @for (op of vencidos(); track op.id) {
-              <div class="flex items-center gap-3 p-3 bg-error/5 rounded-lg border-l-4 border-error">
-                <div class="flex-1 min-w-0">
-                  <p class="text-label-md font-bold text-on-surface font-mono truncate">{{ op.codigo_operacion }}</p>
-                  <p class="text-[11px] text-on-surface-variant truncate">Cliente: {{ op.cliente || '—' }}</p>
-                </div>
-                <div class="text-right shrink-0">
-                  <p class="text-error font-bold text-label-md">+{{ diasVencido(op.fecha_devolucion) }} días</p>
-                  <p class="text-[10px] text-outline">Venció: {{ op.fecha_devolucion }}</p>
-                </div>
+          <!-- barras -->
+          <div class="relative h-full flex items-end justify-around gap-6 px-4">
+            @for (bar of opsChart(); track bar.label) {
+              <div class="flex-1 h-full flex flex-col items-center justify-end gap-2 group max-w-[140px]">
+                <span class="text-lg font-extrabold text-on-surface">{{ bar.value | number }}</span>
+                <div class="w-16 rounded-t-md transition-all group-hover:opacity-80 shadow-sm" [ngClass]="bar.color" [style.height.%]="bar.pct"></div>
+                <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wide">{{ bar.label }}</span>
               </div>
             } @empty {
-              <div class="p-6 text-center text-on-surface-variant text-sm">No hay préstamos vencidos. 🎉</div>
+              <p class="text-on-surface-variant text-sm self-center m-auto">Sin datos de operaciones.</p>
             }
           </div>
         </div>
       </div>
 
-      <!-- Operaciones (gráfico adaptado) -->
-      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-        <div class="flex justify-between items-center mb-8">
-          <h4 class="text-headline-sm font-bold text-on-surface">Operaciones por estado</h4>
+      <!-- Tabla: préstamos por devolver (vencidos) -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-outline-variant flex items-center justify-between">
+          <h4 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
+            <span class="material-symbols-outlined text-error text-[20px]">assignment_late</span>Préstamos por Devolver
+          </h4>
+          <a routerLink="/ventas/vencidos" class="text-primary text-xs font-bold hover:underline flex items-center gap-1">
+            Gestionar<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+          </a>
         </div>
-        <div class="h-48 flex items-end justify-around gap-4 px-2">
-          @for (bar of opsChart(); track bar.label) {
-            <div class="flex-1 flex flex-col items-center gap-2 group max-w-[120px]">
-              <span class="text-sm font-bold text-on-surface">{{ bar.value }}</span>
-              <div class="w-full flex justify-center items-end h-full">
-                <div class="w-12 rounded-t-md transition-all group-hover:opacity-80" [ngClass]="bar.color" [style.height.%]="bar.pct"></div>
-              </div>
-              <span class="text-[11px] font-bold text-outline uppercase tracking-tight">{{ bar.label }}</span>
-            </div>
-          } @empty {
-            <p class="text-on-surface-variant text-sm self-center">Sin datos de operaciones.</p>
-          }
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[640px]">
+            <thead class="bg-surface-container-low text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+              <tr>
+                <th class="px-5 py-3">Operación</th>
+                <th class="px-5 py-3">Cliente</th>
+                <th class="px-5 py-3">Vencimiento</th>
+                <th class="px-5 py-3">Retraso</th>
+                <th class="px-5 py-3">Estado</th>
+                <th class="px-5 py-3 text-right">Acción</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm divide-y divide-outline-variant">
+              @for (op of vencidos(); track op.id) {
+                <tr class="hover:bg-surface-container-low transition-colors">
+                  <td class="px-5 py-3 font-mono font-bold text-primary">{{ op.codigo_operacion }}</td>
+                  <td class="px-5 py-3 text-on-surface">{{ op.cliente || 'Sin cliente' }}</td>
+                  <td class="px-5 py-3 text-on-surface-variant font-mono">{{ op.fecha_devolucion || '—' }}</td>
+                  <td class="px-5 py-3 font-bold text-error">+{{ diasVencido(op.fecha_devolucion) }} días</td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-bold bg-red-500/15 text-red-300 border border-red-500/30 uppercase tracking-wide">
+                      <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>Vencido
+                    </span>
+                  </td>
+                  <td class="px-5 py-3 text-right">
+                    <a routerLink="/devoluciones" class="inline-flex items-center gap-1 px-3 py-1 rounded bg-primary text-on-primary text-xs font-bold hover:opacity-90 transition-opacity">
+                      <span class="material-symbols-outlined text-[15px]">assignment_return</span>Devolver
+                    </a>
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="px-5 py-10 text-center text-on-surface-variant">
+                  <span class="material-symbols-outlined text-3xl text-tertiary block mb-2">task_alt</span>No hay préstamos vencidos. 🎉
+                </td></tr>
+              }
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
     <!-- Columna derecha -->
-    <div class="lg:col-span-4 space-y-4">
-      <!-- Acciones Rápidas -->
+    <div class="lg:col-span-4 space-y-6">
+      <!-- Alertas prioritarias -->
+      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+        <div class="p-5 border-b border-outline-variant flex items-center justify-between">
+          <h4 class="text-headline-sm font-bold text-on-surface">Alertas Prioritarias</h4>
+          @if (criticalCount() > 0) {
+            <span class="px-2 py-0.5 rounded bg-error text-on-error text-[10px] font-extrabold uppercase tracking-widest">Crítico</span>
+          }
+        </div>
+        <div class="divide-y divide-outline-variant/50 max-h-[380px] overflow-y-auto">
+          @for (a of alertas(); track a.ref + a.tag) {
+            <a [routerLink]="a.route"
+               class="flex gap-3 p-4 hover:bg-surface-container-low transition-colors border-l-4"
+               [ngClass]="a.sev === 'critical' ? 'border-error' : 'border-secondary'">
+              <span class="material-symbols-outlined text-[20px] shrink-0 mt-0.5"
+                    [ngClass]="a.sev === 'critical' ? 'text-error' : 'text-secondary'">{{ a.icon }}</span>
+              <div class="min-w-0">
+                <p class="text-label-md font-bold text-on-surface truncate">{{ a.title }}</p>
+                <p class="text-[11px] text-on-surface-variant leading-snug">{{ a.detail }}</p>
+                <p class="text-[10px] font-mono text-outline mt-1 uppercase tracking-wide">{{ a.tag }} · {{ a.ref }}</p>
+              </div>
+            </a>
+          } @empty {
+            <div class="p-8 text-center text-on-surface-variant text-sm">
+              <span class="material-symbols-outlined text-3xl text-tertiary block mb-2">verified</span>Todo en orden. Sin alertas.
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Acciones rápidas -->
       <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
         <h4 class="text-headline-sm font-bold text-on-surface mb-4">Acciones Rápidas</h4>
         <div class="grid grid-cols-2 gap-3">
@@ -158,40 +215,14 @@
         </div>
       </div>
 
-      <!-- Actividad Reciente (últimas operaciones) -->
-      <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
-        <h4 class="text-headline-sm font-bold text-on-surface mb-4">Actividad Reciente</h4>
-        <div class="space-y-5">
-          @for (op of actividad(); track op.id) {
-            <div class="flex gap-3">
-              <div class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-white"
-                   [ngClass]="op.tipo_operacion === 'venta' ? 'bg-primary' : 'bg-secondary'">
-                <span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">
-                  {{ op.tipo_operacion === 'venta' ? 'shopping_cart' : 'handshake' }}
-                </span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-label-md font-bold text-on-surface truncate">{{ tipoLabel(op) }} {{ op.codigo_operacion }}</p>
-                <p class="text-[11px] text-on-surface-variant">{{ op.fecha_operacion }} • {{ op.total | currency: 'USD' : 'symbol' : '1.2-2' }}</p>
-              </div>
-            </div>
-          } @empty {
-            <p class="text-on-surface-variant text-sm">Sin actividad reciente.</p>
-          }
-        </div>
-        <a routerLink="/ventas" class="block text-center w-full mt-6 py-2 border border-outline-variant text-xs font-bold text-on-surface-variant hover:bg-surface-container-low transition-colors rounded">
-          VER TODAS LAS OPERACIONES
-        </a>
-      </div>
-
       <!-- Estado del sistema -->
-      <div class="bg-primary/5 rounded-xl p-4 border border-primary/10">
+      <div class="bg-primary/5 rounded-xl p-4 border border-primary/15">
         <div class="flex items-center gap-3">
           <span class="relative flex h-3 w-3">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
           </span>
-          <span class="text-[12px] font-medium text-on-surface">Backend conectado</span>
+          <span class="text-[12px] font-medium text-on-surface">Backend conectado · Sistema operativo</span>
         </div>
       </div>
     </div>

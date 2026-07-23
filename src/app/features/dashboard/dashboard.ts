@@ -6,6 +6,17 @@ import { OperacionService } from '../../core/services/operacion.service';
 import { DashboardResumen, Producto } from '../../shared/models/producto';
 import { Operacion } from '../../shared/models/operacion';
 
+// Alerta unificada para el panel "Alertas Prioritarias"
+interface Alerta {
+  sev: 'critical' | 'warning';
+  tag: string;
+  icon: string;
+  title: string;
+  detail: string;
+  ref: string;
+  route: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -32,12 +43,57 @@ export class Dashboard implements OnInit {
     if (!o) return [];
     const items = [
       { label: 'Activas', value: o.activas, color: 'bg-primary' },
-      { label: 'Finalizadas', value: o.finalizadas, color: 'bg-emerald-500' },
+      { label: 'Finalizadas', value: o.finalizadas, color: 'bg-tertiary' },
       { label: 'Canceladas', value: o.canceladas, color: 'bg-error' },
     ];
     const max = Math.max(1, ...items.map((i) => i.value));
     return items.map((i) => ({ ...i, pct: Math.max(4, Math.round((i.value / max) * 100)) }));
   });
+
+  totalOps = computed(() => {
+    const o = this.resumen()?.operaciones;
+    return o ? o.activas + o.finalizadas + o.canceladas : 0;
+  });
+
+  // Proporción de stock bajo sobre el total (barra de acento del KPI)
+  stockRatio = computed(() => {
+    const inv = this.resumen()?.inventario;
+    if (!inv || !inv.total_productos) return 0;
+    return Math.min(100, Math.round((inv.bajo_stock / inv.total_productos) * 100));
+  });
+
+  // Panel "Alertas Prioritarias": une vencidos (crítico) + stock bajo (aviso)
+  alertas = computed<Alerta[]>(() => {
+    const out: Alerta[] = [];
+    for (const op of this.vencidos()) {
+      out.push({
+        sev: 'critical',
+        tag: 'Préstamo vencido',
+        icon: 'assignment_late',
+        title: `Préstamo ${op.codigo_operacion} sin devolver`,
+        detail: `Cliente: ${op.cliente || '—'}. ${this.diasVencido(op.fecha_devolucion)} día(s) de retraso.`,
+        ref: op.codigo_operacion,
+        route: '/ventas/vencidos',
+      });
+    }
+    for (const p of this.lowStock()) {
+      const agotado = p.prod_cantidad_disponible === 0;
+      out.push({
+        sev: agotado ? 'critical' : 'warning',
+        tag: agotado ? 'Agotado' : 'Stock bajo',
+        icon: agotado ? 'production_quantity_limits' : 'inventory',
+        title: p.prod_nombre,
+        detail: `Quedan ${p.prod_cantidad_disponible} unidad(es). Reabastecer.`,
+        ref: p.codigo_producto,
+        route: '/inventario',
+      });
+    }
+    return out
+      .sort((a, b) => (a.sev === 'critical' ? 0 : 1) - (b.sev === 'critical' ? 0 : 1))
+      .slice(0, 6);
+  });
+
+  criticalCount = computed(() => this.alertas().filter((a) => a.sev === 'critical').length);
 
   ngOnInit(): void {
     this.loading.set(true);
