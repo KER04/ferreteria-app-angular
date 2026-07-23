@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import { MantenimientoService, extraerErrorHttp } from '../../../core/services/mantenimiento.service';
 import { Producto } from '../../../shared/models/producto';
 import {
@@ -24,6 +25,7 @@ const PAGE_SIZE = 20; // debe coincidir con REST_FRAMEWORK.PAGE_SIZE del backend
 })
 export class MantenimientoRegistros implements OnInit {
   private mantService = inject(MantenimientoService);
+  private route = inject(ActivatedRoute);
 
   // ── Estado de datos ──────────────────────────────
   registros = signal<Mantenimiento[]>([]);
@@ -47,6 +49,7 @@ export class MantenimientoRegistros implements OnInit {
   readonly estados = MANT_ESTADOS;
 
   // KPIs (conteos reales por estado)
+  kpiPendiente = signal(0);
   kpiEnProceso = signal(0);
   kpiFinalizado = signal(0);
   kpiCancelado = signal(0);
@@ -61,7 +64,7 @@ export class MantenimientoRegistros implements OnInit {
   fTipo: number | '' = '';
   fCantidad: number | null = null;
   fDescripcion = '';
-  fCosto: number | '' = '';
+  fCosto = ''; // monto tecleado (dinero)
 
   // ── Modal finalizar (registrar salida) ───────────
   finalizarTarget = signal<Mantenimiento | null>(null);
@@ -71,13 +74,22 @@ export class MantenimientoRegistros implements OnInit {
   sRecuperada: number | null = null;
   sBaja: number | null = 0;
   sObservaciones = '';
-  sCosto: number | '' = '';
+  sCosto = ''; // monto tecleado (dinero)
 
   // ── Confirmación cancelar / eliminar ─────────────
   confirmTarget = signal<Mantenimiento | null>(null);
   confirmAction = signal<'cancelar' | 'eliminar'>('cancelar');
   confirming = signal(false);
   confirmError = signal<string | null>(null);
+
+  // ── Modal completar (registros 'pendiente' de una devolución dañada) ──
+  completarTarget = signal<Mantenimiento | null>(null);
+  completando = signal(false);
+  completarError = signal<string | null>(null);
+
+  cTipo: number | '' = '';
+  cDescripcion = '';
+  cCosto = ''; // monto tecleado (dinero)
 
   // ── Derivados de paginación ──────────────────────
   totalPages = computed(() => Math.max(1, Math.ceil(this.count() / this.pageSize)));
@@ -96,12 +108,20 @@ export class MantenimientoRegistros implements OnInit {
   rangeEnd = computed(() => Math.min(this.page() * this.pageSize, this.count()));
 
   ngOnInit(): void {
+    const estadoParam = this.route.snapshot.queryParamMap.get('estado') as MantEstado | null;
+    if (estadoParam && this.estados.some((e) => e.value === estadoParam)) {
+      this.estadoFilter = estadoParam;
+    }
     this.loadCatalogos();
     this.loadKpis();
     this.loadRegistros();
   }
 
   loadKpis(): void {
+    this.mantService.getRegistros({ estado: 'pendiente', page: 1 }).subscribe({
+      next: (r) => this.kpiPendiente.set(r.count),
+      error: () => {},
+    });
     this.mantService.getRegistros({ estado: 'en_proceso', page: 1 }).subscribe({
       next: (r) => this.kpiEnProceso.set(r.count),
       error: () => {},
@@ -184,12 +204,14 @@ export class MantenimientoRegistros implements OnInit {
 
   estadoClass(estado: MantEstado): string {
     switch (estado) {
+      case 'pendiente':
+        return 'bg-orange-500/15 text-orange-300 border border-orange-500/30';
       case 'en_proceso':
-        return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        return 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/30';
       case 'finalizado':
-        return 'bg-green-100 text-green-800 border border-green-200';
+        return 'bg-green-500/15 text-green-400 border border-green-500/30';
       case 'cancelado':
-        return 'bg-red-100 text-red-800 border border-red-200';
+        return 'bg-red-500/15 text-red-300 border border-red-500/30';
     }
   }
 
@@ -214,10 +236,10 @@ export class MantenimientoRegistros implements OnInit {
   openEdit(m: Mantenimiento): void {
     this.editing.set(m);
     this.fProducto = m.producto;
-    this.fTipo = m.tipo_mantenimiento;
+    this.fTipo = m.tipo_mantenimiento ?? '';
     this.fCantidad = m.cantidad_ingresada;
     this.fDescripcion = m.mant_descripcion ?? '';
-    this.fCosto = m.costo ?? '';
+    this.fCosto = m.costo_info?.cost_total ?? '';
     this.modalError.set(null);
     this.modalOpen.set(true);
   }
@@ -237,7 +259,7 @@ export class MantenimientoRegistros implements OnInit {
       this.mantService
         .updateRegistro(editing.mant_id, {
           mant_descripcion: this.fDescripcion.trim() || null,
-          costo: this.fCosto === '' ? null : this.fCosto,
+          costo_total: this.fCosto.trim() || null,
         })
         .subscribe({
           next: () => {
@@ -264,7 +286,7 @@ export class MantenimientoRegistros implements OnInit {
       tipo_mantenimiento: this.fTipo,
       cantidad_ingresada: this.fCantidad,
       mant_descripcion: this.fDescripcion.trim() || null,
-      costo: this.fCosto === '' ? null : this.fCosto,
+      costo_total: this.fCosto.trim() || null,
     };
 
     this.saving.set(true);
@@ -288,7 +310,7 @@ export class MantenimientoRegistros implements OnInit {
     this.sRecuperada = m.cantidad_pendiente;
     this.sBaja = 0;
     this.sObservaciones = '';
-    this.sCosto = m.costo ?? '';
+    this.sCosto = m.costo_info?.cost_total ?? '';
     this.finalizarError.set(null);
   }
 
@@ -321,7 +343,7 @@ export class MantenimientoRegistros implements OnInit {
         cantidad_recuperada: recuperada,
         cantidad_baja: baja,
         observaciones: this.sObservaciones.trim() || null,
-        costo: this.sCosto === '' ? null : this.sCosto,
+        costo_total: this.sCosto.trim() || null,
       })
       .subscribe({
         next: () => {
@@ -389,5 +411,50 @@ export class MantenimientoRegistros implements OnInit {
   costoLabel(c: Costo): string {
     const partes = c.cost_partes_afectadas ? ` — ${c.cost_partes_afectadas}` : '';
     return `#${c.cost_id} · $${c.cost_total}${partes}`;
+  }
+
+  // ── Completar registro 'pendiente' (viene de una devolución dañada) ──
+  openCompletar(m: Mantenimiento): void {
+    this.completarTarget.set(m);
+    this.cTipo = '';
+    this.cDescripcion = m.mant_descripcion ?? '';
+    this.cCosto = m.costo_info?.cost_total ?? '';
+    this.completarError.set(null);
+  }
+
+  closeCompletar(): void {
+    if (this.completando()) return;
+    this.completarTarget.set(null);
+  }
+
+  submitCompletar(): void {
+    const m = this.completarTarget();
+    if (!m) return;
+
+    if (this.cTipo === '') {
+      this.completarError.set('Selecciona el tipo de mantenimiento.');
+      return;
+    }
+
+    this.completando.set(true);
+    this.completarError.set(null);
+    this.mantService
+      .completarRegistro(m.mant_id, {
+        tipo_mantenimiento: this.cTipo,
+        mant_descripcion: this.cDescripcion.trim() || null,
+        costo_total: this.cCosto.trim() || null,
+      })
+      .subscribe({
+        next: () => {
+          this.completando.set(false);
+          this.completarTarget.set(null);
+          this.flashSuccess(`Registro #${m.mant_id} completado y pasado a "En proceso".`);
+          this.loadRegistros();
+        },
+        error: (err) => {
+          this.completando.set(false);
+          this.completarError.set(extraerErrorHttp(err, 'No se pudo completar el registro.'));
+        },
+      });
   }
 }

@@ -12,7 +12,7 @@
 </div>
 
 @if (successMsg()) {
-  <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+  <div class="bg-green-500/15 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
     <span class="material-symbols-outlined">check_circle</span>{{ successMsg() }}
   </div>
 }
@@ -23,10 +23,18 @@
 }
 
 <!-- KPIs (conteos reales) -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
   <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
     <div class="flex items-start justify-between mb-4">
-      <div class="p-3 bg-primary-fixed rounded"><span class="material-symbols-outlined text-primary">build_circle</span></div>
+      <div class="p-3 bg-orange-500/15 rounded"><span class="material-symbols-outlined text-orange-600">assignment_late</span></div>
+      <span class="text-xs font-bold text-orange-600 uppercase tracking-wider">Pendientes</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiPendiente() }}</h3>
+    <p class="text-on-surface-variant text-sm">Vienen de devoluciones dañadas</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-primary/15 rounded"><span class="material-symbols-outlined text-primary">build_circle</span></div>
       <span class="text-xs font-bold text-primary uppercase tracking-wider">En proceso</span>
     </div>
     <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiEnProceso() }}</h3>
@@ -34,7 +42,7 @@
   </div>
   <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
     <div class="flex items-start justify-between mb-4">
-      <div class="p-3 bg-secondary-fixed rounded"><span class="material-symbols-outlined text-secondary">check_circle</span></div>
+      <div class="p-3 bg-secondary/15 rounded"><span class="material-symbols-outlined text-secondary">check_circle</span></div>
       <span class="text-xs font-bold text-secondary uppercase tracking-wider">Finalizados</span>
     </div>
     <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiFinalizado() }}</h3>
@@ -42,7 +50,7 @@
   </div>
   <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
     <div class="flex items-start justify-between mb-4">
-      <div class="p-3 bg-tertiary-fixed rounded"><span class="material-symbols-outlined text-tertiary">cancel</span></div>
+      <div class="p-3 bg-tertiary/15 rounded"><span class="material-symbols-outlined text-tertiary">cancel</span></div>
       <span class="text-xs font-bold text-tertiary uppercase tracking-wider">Cancelados</span>
     </div>
     <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiCancelado() }}</h3>
@@ -58,11 +66,11 @@
       <div class="h-6 w-px bg-outline-variant hidden md:block"></div>
       <div class="flex gap-2 overflow-x-auto pb-1 md:pb-0">
         <button type="button" (click)="estadoFilter = ''; applyFilters()"
-          [ngClass]="estadoFilter === '' ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+          [ngClass]="estadoFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
           class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">Todos</button>
         @for (e of estados; track e.value) {
           <button type="button" (click)="estadoFilter = e.value; applyFilters()"
-            [ngClass]="estadoFilter === e.value ? 'bg-primary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+            [ngClass]="estadoFilter === e.value ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
             class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">{{ e.label }}</button>
         }
       </div>
@@ -99,22 +107,35 @@
                   <div>
                     <p class="font-medium text-on-surface">{{ r.producto_nombre }}</p>
                     <p class="font-mono text-xs text-on-surface-variant">{{ r.producto_codigo }}</p>
+                    @if (r.devolucion_operacion_codigo) {
+                      <span class="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-orange-300 bg-orange-500/15 px-1.5 py-0.5 rounded"
+                        title="Este registro nació de una devolución dañada">
+                        <span class="material-symbols-outlined text-[12px]">assignment_return</span>
+                        Devolución {{ r.devolucion_operacion_codigo }}
+                      </span>
+                    }
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4">
-                <span class="text-xs px-2 py-1 bg-primary-fixed text-primary rounded font-bold">{{ r.tipo_mantenimiento_nombre }}</span>
+                @if (r.tipo_mantenimiento_nombre) {
+                  <span class="text-xs px-2 py-1 bg-primary/15 text-primary rounded font-bold">{{ r.tipo_mantenimiento_nombre }}</span>
+                } @else {
+                  <span class="text-xs px-2 py-1 bg-surface-container-high text-on-surface-variant rounded font-bold italic">Sin definir</span>
+                }
               </td>
               <td class="px-6 py-4">{{ r.cantidad_ingresada }}</td>
               <td class="px-6 py-4">
                 <span class="flex items-center gap-1.5 font-bold"
                   [ngClass]="{
+                    'text-orange-600': r.estado === 'pendiente',
                     'text-secondary': r.estado === 'en_proceso',
                     'text-outline': r.estado === 'finalizado',
                     'text-error': r.estado === 'cancelado'
                   }">
                   <span class="w-2 h-2 rounded-full"
                     [ngClass]="{
+                      'bg-orange-500 animate-pulse': r.estado === 'pendiente',
                       'bg-secondary animate-pulse': r.estado === 'en_proceso',
                       'bg-outline': r.estado === 'finalizado',
                       'bg-error': r.estado === 'cancelado'
@@ -124,12 +145,19 @@
               </td>
               <td class="px-6 py-4 text-on-surface-variant">{{ r.fecha_ingreso }}</td>
               <td class="px-6 py-4 text-right">
-                @if (r.estado === 'en_proceso') {
-                  <div class="flex justify-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                @if (r.estado === 'pendiente') {
+                  <div class="flex justify-end gap-2">
+                    <button type="button" (click)="openCompletar(r)"
+                      class="px-3 py-1 bg-orange-600 text-white text-xs font-bold rounded hover:bg-orange-700">Completar</button>
+                    <button type="button" (click)="openConfirm(r, 'cancelar')"
+                      class="px-3 py-1 border border-error text-error text-xs font-bold rounded hover:bg-error-container">Cancelar</button>
+                  </div>
+                } @else if (r.estado === 'en_proceso') {
+                  <div class="flex justify-end gap-2">
                     <button type="button" (click)="openEdit(r)" title="Editar"
                       class="px-3 py-1 border border-outline-variant text-on-surface-variant text-xs font-bold rounded hover:bg-surface-container-high">Editar</button>
                     <button type="button" (click)="openFinalizar(r)"
-                      class="px-3 py-1 bg-primary text-white text-xs font-bold rounded hover:bg-primary-container">Finalizar</button>
+                      class="px-3 py-1 bg-primary text-on-primary text-xs font-bold rounded hover:bg-primary-container">Finalizar</button>
                     <button type="button" (click)="openConfirm(r, 'cancelar')"
                       class="px-3 py-1 border border-error text-error text-xs font-bold rounded hover:bg-error-container">Cancelar</button>
                   </div>
@@ -156,7 +184,7 @@
         class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Anterior</button>
       @for (n of pages(); track n) {
         <button type="button" (click)="goToPage(n)"
-          [ngClass]="n === page() ? 'bg-primary text-white border-primary' : 'border-outline-variant hover:bg-surface-container-high'"
+          [ngClass]="n === page() ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant hover:bg-surface-container-high'"
           class="px-3 py-1 border rounded transition-colors">{{ n }}</button>
       }
       <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()"
@@ -217,12 +245,9 @@
           </div>
 
           <div class="space-y-1">
-            <label class="text-xs font-bold text-on-surface-variant uppercase">Costo asociado</label>
-            <select [(ngModel)]="fCosto" name="fCosto"
-              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary">
-              <option [ngValue]="''">Sin costo</option>
-              @for (c of costos(); track c.cost_id) { <option [ngValue]="c.cost_id">{{ costoLabel(c) }}</option> }
-            </select>
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Costo del mantenimiento ($)</label>
+            <input type="text" inputmode="decimal" [(ngModel)]="fCosto" name="fCosto" placeholder="0.00 (opcional)"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
           </div>
 
           <div class="space-y-1 md:col-span-2">
@@ -239,6 +264,65 @@
             class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
             @if (saving()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando... }
             @else { <span class="material-symbols-outlined text-lg">save</span>{{ editing() ? 'Guardar' : 'Registrar' }} }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ MODAL COMPLETAR (registro pendiente de una devolución) ══════════════ -->
+@if (completarTarget(); as m) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeCompletar()">
+    <div class="bg-surface-container-lowest w-full max-w-lg rounded-lg border border-outline-variant shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+        <h3 class="text-xl font-bold text-orange-300 flex items-center gap-2">
+          <span class="material-symbols-outlined">assignment_late</span>
+          Completar Registro MN-{{ m.mant_id }}
+        </h3>
+        <button type="button" (click)="closeCompletar()" class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form class="p-6 space-y-4" (ngSubmit)="submitCompletar()">
+        @if (completarError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ completarError() }}</span>
+          </div>
+        }
+        <p class="text-xs text-on-surface-variant bg-orange-500/10 border border-orange-500/30 rounded p-2">
+          {{ m.producto_nombre }} ({{ m.producto_codigo }}) — {{ m.cantidad_ingresada }} unidad(es) devuelta(s) dañada(s)
+          @if (m.devolucion_operacion_codigo) { desde la devolución <strong>{{ m.devolucion_operacion_codigo }}</strong> }.
+          Indica el tipo de mantenimiento para que el registro pase a "En proceso".
+        </p>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Tipo de mantenimiento *</label>
+          <select [(ngModel)]="cTipo" name="cTipo"
+            class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary">
+            <option [ngValue]="''">Selecciona un tipo</option>
+            @for (t of tipos(); track t.tima_id) { <option [ngValue]="t.tima_id">{{ t.tima_nombre }}</option> }
+          </select>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Costo del mantenimiento ($)</label>
+          <input type="text" inputmode="decimal" [(ngModel)]="cCosto" name="cCosto" placeholder="0.00 (opcional)"
+            class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Descripción</label>
+          <textarea [(ngModel)]="cDescripcion" name="cDescripcion" rows="3" placeholder="Detalle del daño / reparación..."
+            class="w-full bg-surface border border-outline-variant rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary resize-y"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" (click)="closeCompletar()" [disabled]="completando()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Cancelar</button>
+          <button type="submit" [disabled]="completando()"
+            class="bg-orange-600 text-white px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
+            @if (completando()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando... }
+            @else { <span class="material-symbols-outlined text-lg">check_circle</span>Completar }
           </button>
         </div>
       </form>
@@ -304,12 +388,9 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div class="space-y-2">
-            <label class="block text-label-md text-on-surface-variant">Costo asociado</label>
-            <select [(ngModel)]="sCosto" name="sCosto"
-              class="w-full h-12 px-3 border border-outline-variant rounded focus:border-primary outline-none">
-              <option [ngValue]="''">Sin costo</option>
-              @for (c of costos(); track c.cost_id) { <option [ngValue]="c.cost_id">{{ costoLabel(c) }}</option> }
-            </select>
+            <label class="block text-label-md text-on-surface-variant">Costo del mantenimiento ($)</label>
+            <input type="text" inputmode="decimal" [(ngModel)]="sCosto" name="sCosto" placeholder="0.00 (opcional)"
+              class="w-full h-12 px-3 border border-outline-variant rounded focus:border-primary outline-none" />
           </div>
           <!-- Validación en vivo -->
           <div class="p-3 rounded border flex items-center gap-3"

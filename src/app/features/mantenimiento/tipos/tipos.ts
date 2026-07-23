@@ -1,64 +1,54 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { MantenimientoService, extraerErrorHttp } from '../../../core/services/mantenimiento.service';
 import { ConfirmService } from '../../../core/services/confirm.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { TipoMantenimiento } from '../../../shared/models/mantenimiento';
 
-// Plantilla mínima (sin diseño). CRUD de tipos de mantenimiento.
 @Component({
   selector: 'app-mantenimiento-tipos',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  template: `
-    <div class="mb-4">
-      <h2 class="text-headline-md font-bold text-on-surface">Tipos de Mantenimiento</h2>
-      <p class="text-on-surface-variant text-sm">Componente y servicio listos — diseño pendiente.</p>
-    </div>
-
-    @if (error()) { <p class="text-error text-sm mb-3">{{ error() }}</p> }
-
-    <form class="flex gap-2 mb-4" (ngSubmit)="save()">
-      <input class="border border-outline-variant rounded px-3 h-10 text-sm" name="nombre"
-             [(ngModel)]="nombre" placeholder="Nombre del tipo" />
-      <button type="submit" [disabled]="saving()" class="bg-primary text-on-primary px-4 h-10 rounded text-sm font-bold">
-        {{ editingId ? 'Guardar' : 'Añadir' }}
-      </button>
-      @if (editingId) {
-        <button type="button" (click)="cancel()" class="px-4 h-10 rounded text-sm border border-outline-variant">Cancelar</button>
-      }
-    </form>
-
-    @if (loading()) {
-      <p class="text-on-surface-variant text-sm">Cargando...</p>
-    } @else {
-      <table class="w-full text-left text-sm border border-outline-variant">
-        <thead class="bg-surface-container-low"><tr><th class="px-3 py-2">#</th><th class="px-3 py-2">Nombre</th><th class="px-3 py-2 text-right">Acciones</th></tr></thead>
-        <tbody>
-          @for (t of items(); track t.tima_id) {
-            <tr class="border-t border-outline-variant">
-              <td class="px-3 py-2">{{ t.tima_id }}</td>
-              <td class="px-3 py-2">{{ t.tima_nombre }}</td>
-              <td class="px-3 py-2 text-right">
-                <button (click)="edit(t)" class="text-primary mr-3">Editar</button>
-                <button (click)="remove(t)" class="text-error">Eliminar</button>
-              </td>
-            </tr>
-          } @empty { <tr><td colspan="3" class="px-3 py-4 text-on-surface-variant">Sin tipos.</td></tr> }
-        </tbody>
-      </table>
-    }
-  `,
+  templateUrl: './tipos.html',
 })
 export class MantenimientoTipos implements OnInit {
   private srv = inject(MantenimientoService);
   private confirmSvc = inject(ConfirmService);
+  private auth = inject(AuthService);
+
+  // El backend usa IsAdminOrReadOnly: sin rol admin, escribir devuelve 403.
+  // Ocultamos las acciones en vez de dejar que el usuario choque con el error.
+  isAdmin = toSignal(this.auth.isAdmin$, { initialValue: false });
+
+  // ── Estado de datos ──────────────────────────────
   items = signal<TipoMantenimiento[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
+  successMsg = signal<string | null>(null);
+
+  // ── Filtro (el catálogo se carga completo, se filtra en cliente) ──
+  private search = signal('');
+  get searchTerm(): string {
+    return this.search();
+  }
+  set searchTerm(v: string) {
+    this.search.set(v);
+  }
+
+  filtrados = computed(() => {
+    const q = this.search().trim().toLowerCase();
+    if (!q) return this.items();
+    return this.items().filter((t) => t.tima_nombre.toLowerCase().includes(q));
+  });
+
+  // ── Modal crear / editar ─────────────────────────
+  modalOpen = signal(false);
+  editingId = signal<number | null>(null);
   saving = signal(false);
-  editingId: number | null = null;
-  nombre = '';
+  modalError = signal<string | null>(null);
+  fNombre = '';
 
   ngOnInit(): void {
     this.load();
@@ -73,56 +63,84 @@ export class MantenimientoTipos implements OnInit {
         this.loading.set(false);
       },
       error: (e) => {
+        this.items.set([]);
         this.error.set(extraerErrorHttp(e, 'No se pudieron cargar los tipos.'));
         this.loading.set(false);
       },
     });
   }
 
-  edit(t: TipoMantenimiento): void {
-    this.editingId = t.tima_id;
-    this.nombre = t.tima_nombre;
+  private flashSuccess(msg: string): void {
+    this.successMsg.set(msg);
+    setTimeout(() => this.successMsg.set(null), 4000);
   }
 
-  cancel(): void {
-    this.editingId = null;
-    this.nombre = '';
+  // ── Modal ────────────────────────────────────────
+  openCreate(): void {
+    this.editingId.set(null);
+    this.fNombre = '';
+    this.modalError.set(null);
+    this.modalOpen.set(true);
+  }
+
+  openEdit(t: TipoMantenimiento): void {
+    this.editingId.set(t.tima_id);
+    this.fNombre = t.tima_nombre;
+    this.modalError.set(null);
+    this.modalOpen.set(true);
+  }
+
+  closeModal(): void {
+    if (this.saving()) return;
+    this.modalOpen.set(false);
   }
 
   save(): void {
-    const nombre = this.nombre.trim();
-    if (!nombre) return;
+    const nombre = this.fNombre.trim();
+    if (!nombre) {
+      this.modalError.set('Indica el nombre del tipo.');
+      return;
+    }
     this.saving.set(true);
-    this.error.set(null);
-    const req = this.editingId
-      ? this.srv.updateTipo(this.editingId, { tima_nombre: nombre })
+    this.modalError.set(null);
+
+    const id = this.editingId();
+    const req = id
+      ? this.srv.updateTipo(id, { tima_nombre: nombre })
       : this.srv.createTipo({ tima_nombre: nombre });
+
     req.subscribe({
       next: () => {
         this.saving.set(false);
-        this.cancel();
+        this.modalOpen.set(false);
+        this.flashSuccess(id ? `Tipo "${nombre}" actualizado.` : `Tipo "${nombre}" creado.`);
         this.load();
       },
       error: (e) => {
         this.saving.set(false);
-        this.error.set(extraerErrorHttp(e, 'No se pudo guardar el tipo.'));
+        this.modalError.set(extraerErrorHttp(e, 'No se pudo guardar el tipo.'));
       },
     });
   }
 
   remove(t: TipoMantenimiento): void {
-    this.confirmSvc.ask({
-      title: 'Eliminar tipo',
-      message: `¿Eliminar el tipo "${t.tima_nombre}"? Esta acción no se puede deshacer.`,
-      confirmText: 'Eliminar',
-      tone: 'danger',
-      icon: 'delete_forever',
-    }).then((ok) => {
-      if (!ok) return;
-      this.srv.deleteTipo(t.tima_id).subscribe({
-        next: () => this.load(),
-        error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el tipo.')),
+    this.confirmSvc
+      .ask({
+        title: 'Eliminar tipo',
+        message: `¿Eliminar el tipo "${t.tima_nombre}"? Esta acción no se puede deshacer.`,
+        confirmText: 'Eliminar',
+        tone: 'danger',
+        icon: 'delete_forever',
+      })
+      .then((ok) => {
+        if (!ok) return;
+        this.srv.deleteTipo(t.tima_id).subscribe({
+          next: () => {
+            this.flashSuccess(`Tipo "${t.tima_nombre}" eliminado.`);
+            this.load();
+          },
+          error: (e) => this.error.set(extraerErrorHttp(e, 'No se pudo eliminar el tipo.')),
+        });
       });
-    });
   }
 }
