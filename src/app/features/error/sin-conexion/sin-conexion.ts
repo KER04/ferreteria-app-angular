@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-sin-conexion',
@@ -125,7 +126,7 @@ export class SinConexion {
     this.retrying.set(true);
     this.retryFailed.set(false);
     // El backend expone /health/ para chequeo de disponibilidad.
-    this.http.get('http://localhost:8000/health/').subscribe({
+    this.http.get(`${environment.host}/health/`).subscribe({
       next: () => {
         this.retrying.set(false);
         this.router.navigate(['/dashboard']);

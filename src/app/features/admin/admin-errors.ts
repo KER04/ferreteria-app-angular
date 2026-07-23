@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 // Los endpoints de administración exigen IsAdminRole en el backend,
 // incluso para LEER. Mapeamos 401/403 a un aviso claro y el resto
@@ -9,7 +10,7 @@ export function adminErrorMessage(err: unknown, fallback: string): string {
       return 'Requiere rol administrador. Tu sesión no tiene permisos para esta operación.';
     }
     if (err.status === 0) {
-      return 'No se pudo conectar con el servidor (http://localhost:8000).';
+      return `No se pudo conectar con el servidor (${environment.host}).`;
     }
     const body = err.error;
     if (body && typeof body === 'object') {

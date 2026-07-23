@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import {
   Paginated,
@@ -20,8 +21,8 @@ export class AdminService {
   private http = inject(HttpClient);
 
   // Rutas EXACTAS del backend (mi_proyecto/urls.py + apps/autenticacion/urls.py)
-  private usuariosUrl = 'http://localhost:8000/usuarios';
-  private authUrl = 'http://localhost:8000/api/auth';
+  private usuariosUrl = `${environment.host}/usuarios`;
+  private authUrl = `${environment.apiUrl}/auth`;
 
   // Recorre todas las páginas DRF de un endpoint y acumula los results.
   private fetchAll<T>(url: string): Observable<T[]> {

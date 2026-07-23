@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 /**
  * Convierte errores de DRF (400 con dict de campos, 403, detail, etc.)
@@ -14,7 +15,7 @@ export function extraerMensajeError(err: unknown, fallback: string): string {
     return 'Tu sesión expiró. Vuelve a iniciar sesión.';
   }
   if (httpErr?.status === 0) {
-    return 'No se pudo conectar con el servidor (http://localhost:8000).';
+    return `No se pudo conectar con el servidor (${environment.host}).`;
   }
 
   const body = httpErr?.error;
