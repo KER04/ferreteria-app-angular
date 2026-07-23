@@ -1,0 +1,274 @@
+<!-- Encabezado -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-primary tracking-tight mb-1">Cargos por Pérdida</h2>
+    <p class="text-on-surface-variant">Productos perdidos en préstamos y su cobro al cliente.</p>
+  </div>
+</div>
+
+@if (successMsg()) {
+  <div class="bg-green-500/15 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">check_circle</span>{{ successMsg() }}
+  </div>
+}
+@if (error()) {
+  <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">error</span>{{ error() }}
+  </div>
+}
+
+<!-- KPIs -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-red-500/15 rounded"><span class="material-symbols-outlined text-red-600">payments</span></div>
+      <span class="text-xs font-bold text-red-600 uppercase tracking-wider">Por cobrar</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">${{ kpiMontoPendiente() | number: '1.2-2' }}</h3>
+    <p class="text-on-surface-variant text-sm">{{ kpiPendiente() }} cargo(s) pendiente(s)</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-orange-500/15 rounded"><span class="material-symbols-outlined text-orange-600">pending_actions</span></div>
+      <span class="text-xs font-bold text-orange-600 uppercase tracking-wider">Pendientes</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiPendiente() }}</h3>
+    <p class="text-on-surface-variant text-sm">Cargos sin resolver</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-green-500/15 rounded"><span class="material-symbols-outlined text-green-600">check_circle</span></div>
+      <span class="text-xs font-bold text-green-600 uppercase tracking-wider">Cobrados</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiCobrado() }}</h3>
+    <p class="text-on-surface-variant text-sm">Pagados por el cliente</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-green-500/15 rounded"><span class="material-symbols-outlined text-green-600">paid</span></div>
+      <span class="text-xs font-bold text-green-600 uppercase tracking-wider">Cobrado</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">${{ kpiMontoCobrado() | number: '1.2-2' }}</h3>
+    <p class="text-on-surface-variant text-sm">Total cobrado a clientes</p>
+  </div>
+  <div class="bg-surface-container-lowest p-6 border border-outline-variant rounded-lg shadow-sm">
+    <div class="flex items-start justify-between mb-4">
+      <div class="p-3 bg-surface-container-high rounded"><span class="material-symbols-outlined text-on-surface-variant">block</span></div>
+      <span class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Condonados</span>
+    </div>
+    <h3 class="text-4xl font-extrabold text-on-surface mb-1">{{ kpiCondonado() }}</h3>
+    <p class="text-on-surface-variant text-sm">Cargos perdonados</p>
+  </div>
+</div>
+
+<!-- Tabla -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm">
+  <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <h4 class="font-bold text-on-surface px-2">Cargos</h4>
+      <div class="h-6 w-px bg-outline-variant hidden md:block"></div>
+      <div class="flex gap-2 overflow-x-auto pb-1 md:pb-0">
+        <button type="button" (click)="estadoFilter = ''; applyFilters()"
+          [ngClass]="estadoFilter === '' ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+          class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">Todos</button>
+        @for (e of estados; track e.value) {
+          <button type="button" (click)="estadoFilter = e.value; applyFilters()"
+            [ngClass]="estadoFilter === e.value ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant hover:bg-outline-variant'"
+            class="px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors">{{ e.label }}</button>
+        }
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <input type="text" [(ngModel)]="searchTerm" (keyup.enter)="applyFilters()" placeholder="Cliente o producto..."
+        class="bg-surface border border-outline-variant rounded-lg h-9 px-3 text-sm outline-none focus:ring-2 focus:ring-primary w-48" />
+      <button type="button" (click)="applyFilters()"
+        class="h-9 px-3 rounded-lg bg-surface-container-high text-on-surface-variant text-xs font-bold hover:bg-outline-variant transition-colors">Buscar</button>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[960px]">
+      <thead class="bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+        <tr>
+          <th class="px-6 py-4">Cargo</th>
+          <th class="px-6 py-4">Producto</th>
+          <th class="px-6 py-4">Cliente</th>
+          <th class="px-6 py-4">Cant.</th>
+          <th class="px-6 py-4">Valor un.</th>
+          <th class="px-6 py-4">Monto</th>
+          <th class="px-6 py-4">Estado</th>
+          <th class="px-6 py-4">Registro</th>
+          <th class="px-6 py-4 text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="text-sm divide-y divide-outline-variant">
+        @if (loading()) {
+          <tr><td colspan="9" class="px-6 py-12 text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-3xl animate-spin block mb-2">progress_activity</span>Cargando...
+          </td></tr>
+        } @else {
+          @for (p of perdidas(); track p.perd_id) {
+            <tr class="hover:bg-on-surface-variant/5 transition-colors group">
+              <td class="px-6 py-4 font-mono font-bold text-error">PD-{{ p.perd_id }}</td>
+              <td class="px-6 py-4">
+                <p class="font-medium text-on-surface">{{ p.producto_nombre }}</p>
+                <p class="font-mono text-xs text-on-surface-variant">{{ p.producto_codigo }}</p>
+                @if (p.operacion_codigo) {
+                  <span class="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-on-surface-variant bg-surface-container-high px-1.5 py-0.5 rounded">
+                    <span class="material-symbols-outlined text-[12px]">assignment_return</span>{{ p.operacion_codigo }}
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4">{{ p.cliente || 'Sin cliente' }}</td>
+              <td class="px-6 py-4">{{ p.cantidad }}</td>
+              <td class="px-6 py-4 text-on-surface-variant">${{ p.valor_unitario | number: '1.2-2' }}</td>
+              <td class="px-6 py-4 font-bold">${{ p.monto_total | number: '1.2-2' }}</td>
+              <td class="px-6 py-4">
+                <span class="flex items-center gap-1.5 font-bold"
+                  [ngClass]="{
+                    'text-orange-600': p.estado === 'pendiente',
+                    'text-green-600': p.estado === 'cobrado',
+                    'text-outline': p.estado === 'condonado'
+                  }">
+                  <span class="w-2 h-2 rounded-full"
+                    [ngClass]="{
+                      'bg-orange-500 animate-pulse': p.estado === 'pendiente',
+                      'bg-green-500': p.estado === 'cobrado',
+                      'bg-outline': p.estado === 'condonado'
+                    }"></span>
+                  {{ estadoLabel(p.estado) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-on-surface-variant">{{ p.fecha_registro }}</td>
+              <td class="px-6 py-4 text-right">
+                @if (p.estado === 'pendiente') {
+                  <div class="flex justify-end gap-2">
+                    <button type="button" (click)="openEdit(p)" title="Ajustar valor"
+                      class="px-3 py-1 border border-outline-variant text-on-surface-variant text-xs font-bold rounded hover:bg-surface-container-high">Ajustar</button>
+                    <button type="button" (click)="openConfirm(p, 'cobrar')"
+                      class="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700">Cobrar</button>
+                    <button type="button" (click)="openConfirm(p, 'condonar')"
+                      class="px-3 py-1 border border-outline-variant text-on-surface-variant text-xs font-bold rounded hover:bg-surface-container-high">Condonar</button>
+                  </div>
+                } @else if (p.estado === 'cobrado') {
+                  <span class="text-xs text-on-surface-variant">Cobrado {{ p.fecha_cobro }}</span>
+                } @else {
+                  <span class="text-xs text-outline">—</span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="px-6 py-12 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl text-outline block mb-2">savings</span>Sin cargos por pérdida.
+            </td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between text-xs font-bold text-on-surface-variant">
+    <span>Mostrando {{ rangeStart() }}-{{ rangeEnd() }} de {{ count() }} cargos</span>
+    <div class="flex gap-2">
+      <button type="button" (click)="goToPage(page() - 1)" [disabled]="page() === 1"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Anterior</button>
+      @for (n of pages(); track n) {
+        <button type="button" (click)="goToPage(n)"
+          [ngClass]="n === page() ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant hover:bg-surface-container-high'"
+          class="px-3 py-1 border rounded transition-colors">{{ n }}</button>
+      }
+      <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL AJUSTAR VALOR ══════════════ -->
+@if (editTarget(); as p) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeEdit()">
+    <div class="bg-surface-container-lowest w-full max-w-lg rounded-lg border border-outline-variant shadow-2xl" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+        <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined">payments</span>Ajustar Cargo PD-{{ p.perd_id }}
+        </h3>
+        <button type="button" (click)="closeEdit()" class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form class="p-6 space-y-4" (ngSubmit)="submitEdit()">
+        @if (editError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ editError() }}</span>
+          </div>
+        }
+        <p class="text-xs text-on-surface-variant bg-surface-container-low border border-outline-variant rounded p-2">
+          {{ p.producto_nombre }} ({{ p.producto_codigo }}) — {{ p.cantidad }} unidad(es) perdida(s) por {{ p.cliente || 'cliente sin nombre' }}.
+        </p>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Valor por unidad ($) *</label>
+          <input type="text" inputmode="decimal" [(ngModel)]="eValor" name="eValor"
+            class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+          <p class="text-[11px] text-outline">
+            Monto total a cobrar: <strong>${{ ((+eValor || 0) * p.cantidad) | number: '1.2-2' }}</strong> ({{ p.cantidad }} × valor).
+          </p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Observaciones</label>
+          <textarea [(ngModel)]="eObservaciones" name="eObservaciones" rows="3" placeholder="Motivo del ajuste, acuerdo con el cliente..."
+            class="w-full bg-surface border border-outline-variant rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary resize-y"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" (click)="closeEdit()" [disabled]="saving()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Cancelar</button>
+          <button type="submit" [disabled]="saving()"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
+            @if (saving()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando... }
+            @else { <span class="material-symbols-outlined text-lg">save</span>Guardar }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ CONFIRMAR COBRAR / CONDONAR ══════════════ -->
+@if (confirmTarget(); as p) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeConfirm()">
+    <div class="bg-surface-container-lowest w-full max-w-md rounded-lg border border-outline-variant shadow-2xl p-6" (click)="$event.stopPropagation()">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+          [ngClass]="confirmAction() === 'cobrar' ? 'bg-green-500/15' : 'bg-surface-container-high'">
+          <span class="material-symbols-outlined text-2xl"
+            [ngClass]="confirmAction() === 'cobrar' ? 'text-green-600' : 'text-on-surface-variant'">
+            {{ confirmAction() === 'cobrar' ? 'paid' : 'block' }}
+          </span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-on-surface">{{ confirmAction() === 'cobrar' ? 'Marcar como cobrado' : 'Condonar cargo' }}</h3>
+          <p class="text-sm text-on-surface-variant mt-1">
+            {{ confirmAction() === 'cobrar'
+              ? 'Confirma que el cliente pagó $' + p.monto_total + ' por PD-' + p.perd_id + '.'
+              : 'El cargo PD-' + p.perd_id + ' ($' + p.monto_total + ') no se le cobrará al cliente. ¿Continuar?' }}
+          </p>
+        </div>
+      </div>
+      @if (confirmError()) {
+        <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mt-4 flex items-start gap-2 text-sm">
+          <span class="material-symbols-outlined text-lg">error</span><span>{{ confirmError() }}</span>
+        </div>
+      }
+      <div class="flex items-center justify-end gap-3 mt-6">
+        <button type="button" (click)="closeConfirm()" [disabled]="confirming()"
+          class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Volver</button>
+        <button type="button" (click)="submitConfirm()" [disabled]="confirming()"
+          class="px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
+          [ngClass]="confirmAction() === 'cobrar' ? 'bg-green-600' : 'bg-on-surface-variant'">
+          @if (confirming()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Procesando... }
+          @else { {{ confirmAction() === 'cobrar' ? 'Confirmar cobro' : 'Condonar' }} }
+        </button>
+      </div>
+    </div>
+  </div>
+}

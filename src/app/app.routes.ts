@@ -43,10 +43,6 @@ export const routes: Routes = [
         path: 'inventario/categorias',
         loadComponent: () => import('./features/inventario/categorias/categorias').then(m => m.Categorias)
       },
-      {
-        path: 'inventario/prestamos',
-        loadComponent: () => import('./features/inventario/prestamos/prestamos').then(m => m.Prestamos)
-      },
 
       // ── Operaciones (Ventas / Préstamos) ─────────
       {
@@ -58,8 +54,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/operaciones/devoluciones/devoluciones').then(m => m.OperacionesDevoluciones)
       },
       {
+        path: 'perdidas',
+        loadComponent: () => import('./features/operaciones/perdidas/perdidas').then(m => m.OperacionesPerdidas)
+      },
+      {
         path: 'ventas/vencidos',
         loadComponent: () => import('./features/operaciones/vencidos/vencidos').then(m => m.OperacionesVencidos)
+      },
+
+      // ── Clientes ────────────────────────────────
+      {
+        path: 'clientes',
+        loadComponent: () => import('./features/clientes/clientes').then(m => m.Clientes)
       },
 
       // ── Mantenimiento ───────────────────────────
@@ -70,10 +76,6 @@ export const routes: Routes = [
       {
         path: 'mantenimiento/tipos',
         loadComponent: () => import('./features/mantenimiento/tipos/tipos').then(m => m.MantenimientoTipos)
-      },
-      {
-        path: 'mantenimiento/costos',
-        loadComponent: () => import('./features/mantenimiento/costos/costos').then(m => m.MantenimientoCostos)
       },
       {
         path: 'mantenimiento/salidas',

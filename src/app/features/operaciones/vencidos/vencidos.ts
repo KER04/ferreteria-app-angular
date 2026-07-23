@@ -83,7 +83,13 @@ import { Operacion } from '../../../shared/models/operacion';
                         <div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">{{ inicialesCliente(op) }}</div>
                         <div>
                           <p class="font-bold text-on-background leading-none">{{ op.cliente || 'Sin cliente' }}</p>
-                          <p class="text-label-md text-outline mt-1">{{ op.usuario_nombre }}</p>
+                          @if (op.cliente_info?.telefono; as tel) {
+                            <a [href]="'tel:' + tel" class="text-label-md text-primary mt-1 inline-flex items-center gap-1 hover:underline">
+                              <span class="material-symbols-outlined text-[14px]">call</span>{{ tel }}
+                            </a>
+                          } @else {
+                            <p class="text-label-md text-outline mt-1">{{ op.usuario_nombre }}</p>
+                          }
                         </div>
                       </div>
                     </td>
@@ -101,14 +107,14 @@ import { Operacion } from '../../../shared/models/operacion';
                       </span>
                     </td>
                     <td class="py-4 px-6 text-right">
-                      <a routerLink="/devoluciones" class="bg-primary text-white py-1.5 px-4 rounded-lg font-medium text-sm hover:opacity-90 transition-all inline-flex items-center gap-1">
+                      <a routerLink="/devoluciones" class="bg-primary text-on-primary py-1.5 px-4 rounded-lg font-medium text-sm hover:opacity-90 transition-all inline-flex items-center gap-1">
                         <span class="material-symbols-outlined text-[18px]">assignment_return</span>Devolución
                       </a>
                     </td>
                   </tr>
                 } @empty {
                   <tr><td colspan="6" class="px-6 py-12 text-center text-on-surface-variant">
-                    <span class="material-symbols-outlined text-4xl text-green-500 block mb-2">task_alt</span>No hay préstamos vencidos. 🎉
+                    <span class="material-symbols-outlined text-4xl text-green-500 block mb-2"></span>No hay préstamos vencidos. 
                   </td></tr>
                 }
               }

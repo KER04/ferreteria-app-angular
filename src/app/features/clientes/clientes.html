@@ -1,0 +1,247 @@
+<!-- Encabezado -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+  <div>
+    <h2 class="text-headline-md font-bold text-primary tracking-tight mb-1">Clientes</h2>
+    <p class="text-on-surface-variant">Registro de clientes para ventas y préstamos.</p>
+  </div>
+  <button type="button" (click)="openCreate()"
+    class="bg-primary text-on-primary h-12 px-6 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-md">
+    <span class="material-symbols-outlined">person_add</span>
+    Nuevo Cliente
+  </button>
+</div>
+
+@if (successMsg()) {
+  <div class="bg-green-500/15 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">check_circle</span>{{ successMsg() }}
+  </div>
+}
+@if (error()) {
+  <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mb-4 flex items-center gap-2 text-sm">
+    <span class="material-symbols-outlined">error</span>{{ error() }}
+  </div>
+}
+
+<!-- Tabla -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm">
+  <div class="p-4 border-b border-outline-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="relative flex-1 max-w-md">
+      <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+      <input type="text" [ngModel]="searchTerm" (ngModelChange)="onSearch($event)" placeholder="Buscar por nombre, documento o teléfono..."
+        class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 pl-10 pr-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wide">Estado</label>
+      <select [(ngModel)]="activoFilter" (ngModelChange)="applyFilters()"
+        class="bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary">
+        <option value="true">Activos</option>
+        <option value="false">Inactivos</option>
+        <option value="">Todos</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[920px]">
+      <thead class="bg-surface-container-low text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+        <tr>
+          <th class="px-6 py-4">Documento</th>
+          <th class="px-6 py-4">Nombre</th>
+          <th class="px-6 py-4">Teléfono</th>
+          <th class="px-6 py-4">Dirección</th>
+          <th class="px-6 py-4">Estado</th>
+          <th class="px-6 py-4 text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="text-sm divide-y divide-outline-variant">
+        @if (loading()) {
+          <tr><td colspan="6" class="px-6 py-12 text-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-3xl animate-spin block mb-2">progress_activity</span>Cargando...
+          </td></tr>
+        } @else {
+          @for (c of clientes(); track c.cliente_id) {
+            <tr class="hover:bg-on-surface-variant/5 transition-colors group" [class.opacity-60]="!c.activo">
+              <td class="px-6 py-4">
+                <span class="font-mono font-bold text-on-surface">{{ c.numero_documento }}</span>
+                <span class="block text-[10px] text-on-surface-variant uppercase tracking-wide">{{ c.tipo_documento }}</span>
+              </td>
+              <td class="px-6 py-4 font-medium text-on-surface">{{ c.nombre }}</td>
+              <td class="px-6 py-4 font-mono text-on-surface-variant">{{ c.telefono }}</td>
+              <td class="px-6 py-4 text-on-surface-variant">
+                @if (c.direccion) {
+                  {{ c.direccion }}
+                } @else {
+                  <span class="inline-flex items-center gap-1 text-[11px] font-bold text-orange-300 bg-orange-500/15 px-2 py-0.5 rounded border border-orange-500/30" title="Sin dirección: no se le puede prestar">
+                    <span class="material-symbols-outlined text-[13px]">warning</span>Falta dirección
+                  </span>
+                }
+              </td>
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wide border"
+                  [ngClass]="c.activo ? 'bg-green-500/15 text-green-400 border-green-500/30' : 'bg-surface-container-high text-on-surface-variant border-outline-variant'">
+                  <span class="w-1.5 h-1.5 rounded-full" [ngClass]="c.activo ? 'bg-green-400' : 'bg-outline'"></span>
+                  {{ c.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-1">
+                  <button type="button" (click)="openEdit(c)" title="Editar"
+                    class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">edit_square</span>
+                  </button>
+                  @if (c.activo) {
+                    <button type="button" (click)="openConfirm(c)" title="Desactivar"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors">
+                      <span class="material-symbols-outlined text-[20px]">block</span>
+                    </button>
+                  } @else {
+                    <button type="button" (click)="openConfirm(c)" title="Reactivar"
+                      class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:text-green-400 hover:bg-green-500/15 transition-colors">
+                      <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="px-6 py-12 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl text-outline block mb-2">group_off</span>Sin clientes.
+            </td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-4 bg-surface-container-low border-t border-outline-variant flex items-center justify-between text-xs font-bold text-on-surface-variant">
+    <span>Mostrando {{ rangeStart() }}-{{ rangeEnd() }} de {{ count() }} clientes</span>
+    <div class="flex gap-2">
+      <button type="button" (click)="goToPage(page() - 1)" [disabled]="page() === 1"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Anterior</button>
+      @for (n of pages(); track n) {
+        <button type="button" (click)="goToPage(n)"
+          [ngClass]="n === page() ? 'bg-primary text-on-primary border-primary' : 'border-outline-variant hover:bg-surface-container-high'"
+          class="px-3 py-1 border rounded transition-colors">{{ n }}</button>
+      }
+      <button type="button" (click)="goToPage(page() + 1)" [disabled]="page() === totalPages()"
+        class="px-3 py-1 border border-outline-variant rounded hover:bg-surface-container-high transition-colors disabled:opacity-40">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL CREAR / EDITAR ══════════════ -->
+@if (modalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeModal()">
+    <div class="bg-surface-container-lowest w-full max-w-xl rounded-lg border border-outline-variant shadow-2xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+      <div class="p-6 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+        <h3 class="text-xl font-bold text-primary flex items-center gap-2">
+          <span class="material-symbols-outlined">{{ editing() ? 'edit_note' : 'person_add' }}</span>
+          {{ editing() ? 'Editar Cliente' : 'Nuevo Cliente' }}
+        </h3>
+        <button type="button" (click)="closeModal()" class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <form class="p-6 space-y-4 overflow-y-auto" (ngSubmit)="save()">
+        @if (modalError()) {
+          <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg flex items-start gap-2 text-sm">
+            <span class="material-symbols-outlined text-lg">error</span><span>{{ modalError() }}</span>
+          </div>
+        }
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Tipo doc. *</label>
+            <select [(ngModel)]="form.tipo_documento" name="tipo_documento"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary">
+              @for (t of tipos; track t.value) { <option [ngValue]="t.value">{{ t.value }}</option> }
+            </select>
+          </div>
+          <div class="space-y-1 md:col-span-2">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Número de documento *</label>
+            <input type="text" [(ngModel)]="form.numero_documento" name="numero_documento" placeholder="Ej. 1020304050"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Nombre completo *</label>
+          <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej. Juan Pérez"
+            class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Teléfono *</label>
+            <input type="text" inputmode="tel" [(ngModel)]="form.telefono" name="telefono" placeholder="Ej. 3001234567"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-on-surface-variant uppercase">Correo</label>
+            <input type="email" [(ngModel)]="form.correo" name="correo" placeholder="opcional"
+              class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Dirección</label>
+          <input type="text" [(ngModel)]="form.direccion" name="direccion" placeholder="Requerida para poder prestarle"
+            class="w-full bg-surface border border-outline-variant rounded h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+          <p class="text-[11px] text-outline">Sin dirección el cliente sirve para ventas, pero no se le puede prestar.</p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-on-surface-variant uppercase">Observaciones</label>
+          <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2" placeholder="Notas del cliente..."
+            class="w-full bg-surface border border-outline-variant rounded px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary resize-y"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" (click)="closeModal()" [disabled]="saving()"
+            class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Cancelar</button>
+          <button type="submit" [disabled]="saving()"
+            class="bg-primary text-on-primary px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm hover:opacity-90 active:scale-95 transition-all disabled:opacity-60">
+            @if (saving()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Guardando... }
+            @else { <span class="material-symbols-outlined text-lg">save</span>{{ editing() ? 'Guardar' : 'Registrar' }} }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ══════════════ CONFIRMAR DESACTIVAR / REACTIVAR ══════════════ -->
+@if (confirmTarget(); as c) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeConfirm()">
+    <div class="bg-surface-container-lowest w-full max-w-md rounded-lg border border-outline-variant shadow-2xl p-6" (click)="$event.stopPropagation()">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+          [ngClass]="c.activo ? 'bg-error-container/60' : 'bg-green-500/15'">
+          <span class="material-symbols-outlined text-2xl" [ngClass]="c.activo ? 'text-error' : 'text-green-400'">{{ c.activo ? 'block' : 'how_to_reg' }}</span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-bold text-on-surface">{{ c.activo ? 'Desactivar cliente' : 'Reactivar cliente' }}</h3>
+          <p class="text-sm text-on-surface-variant mt-1">
+            {{ c.activo
+              ? '¿Desactivar a ' + c.nombre + '? No se borra (conserva su historial), pero dejará de aparecer en nuevas operaciones.'
+              : '¿Reactivar a ' + c.nombre + '?' }}
+          </p>
+        </div>
+      </div>
+      @if (confirmError()) {
+        <div class="bg-error-container/60 border border-error text-on-error-container px-4 py-3 rounded-lg mt-4 flex items-start gap-2 text-sm">
+          <span class="material-symbols-outlined text-lg">error</span><span>{{ confirmError() }}</span>
+        </div>
+      }
+      <div class="flex items-center justify-end gap-3 mt-6">
+        <button type="button" (click)="closeConfirm()" [disabled]="confirming()"
+          class="px-5 h-10 rounded-lg border border-outline-variant text-on-surface-variant font-bold text-sm hover:bg-surface-container transition-colors disabled:opacity-40">Volver</button>
+        <button type="button" (click)="submitConfirm()" [disabled]="confirming()"
+          class="px-6 h-10 rounded-lg flex items-center gap-2 font-bold text-sm text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
+          [ngClass]="c.activo ? 'bg-error text-on-error' : 'bg-primary text-on-primary'">
+          @if (confirming()) { <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>Procesando... }
+          @else { {{ c.activo ? 'Desactivar' : 'Reactivar' }} }
+        </button>
+      </div>
+    </div>
+  </div>
+}

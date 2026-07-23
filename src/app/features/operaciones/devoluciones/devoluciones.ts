@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { OperacionService } from '../../../core/services/operacion.service';
 import { extraerMensajeError } from '../error-utils';
@@ -18,7 +19,7 @@ interface LineaDev {
 @Component({
   selector: 'app-operaciones-devoluciones',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="max-w-[1200px] mx-auto space-y-8">
       <!-- Encabezado -->
@@ -41,123 +42,146 @@ interface LineaDev {
         </div>
       }
       @if (successMsg()) {
-        <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+        <div class="bg-green-500/15 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
           <span class="material-symbols-outlined">check_circle</span>{{ successMsg() }}
         </div>
       }
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Columna izquierda: selección + resumen -->
-        <div class="lg:col-span-1 space-y-6">
-          <section class="bg-surface-container-lowest border border-outline-variant p-5 rounded-xl shadow-sm">
-            <div class="flex items-center gap-3 mb-5">
-              <div class="w-10 h-10 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center"><span class="material-symbols-outlined">assignment</span></div>
-              <h3 class="text-headline-sm font-bold text-primary">Préstamo</h3>
-            </div>
-            <label class="text-label-md text-outline block mb-1">Selecciona un préstamo activo</label>
-            <select [ngModel]="selectedOp()?.id ?? ''" (ngModelChange)="selectPrestamo($event)"
-              class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm outline-none focus:ring-2 focus:ring-primary">
-              <option [ngValue]="''">— Elegir —</option>
-              @for (p of prestamos(); track p.id) { <option [ngValue]="p.id">{{ p.codigo_operacion }} · {{ p.cliente || 'Sin cliente' }}</option> }
-            </select>
-            @if (prestamos().length === 0 && !loading()) {
-              <p class="text-xs text-on-surface-variant mt-2">No hay préstamos activos con unidades pendientes.</p>
-            }
+      <!-- Selección de préstamo + resumen del cliente -->
+      <section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-end">
+          <div>
+            <label class="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant block mb-1.5">Buscar Préstamo Activo</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px] pointer-events-none">search</span>
+              <input type="text" [ngModel]="filtroPrestamo()" (ngModelChange)="onFiltroPrestamo($event)"
+                (focus)="mostrarLista.set(true)" (blur)="cerrarListaLuego()" name="filtroPrestamo" autocomplete="off"
+                placeholder="Buscar por código o cliente..."
+                class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-11 pl-10 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant/70 outline-none focus:ring-2 focus:ring-primary" />
 
-            @if (selectedOp(); as op) {
-              <div class="mt-5 space-y-3">
-                <div class="p-3 bg-surface-container-low rounded-lg">
-                  <span class="text-label-md text-outline block mb-1">Cliente</span>
+              @if (mostrarLista()) {
+                <ul class="absolute z-30 mt-1 w-full bg-surface-container-low border border-outline-variant rounded-lg shadow-2xl max-h-64 overflow-y-auto py-1">
+                  @for (p of prestamosFiltrados(); track p.id) {
+                    <li>
+                      <button type="button" (mousedown)="elegirPrestamo(p)"
+                        class="w-full text-left px-3 py-2 hover:bg-surface-container-high transition-colors flex items-center justify-between gap-2">
+                        <span class="font-mono font-bold text-primary text-sm">{{ p.codigo_operacion }}</span>
+                        <span class="text-on-surface-variant text-xs truncate">{{ p.cliente || 'Sin cliente' }}</span>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="px-3 py-2 text-sm text-on-surface-variant">
+                      {{ prestamos().length === 0 ? 'No hay préstamos activos pendientes.' : 'Sin coincidencias.' }}
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+            @if (selectedOp()) {
+              <button type="button" (click)="selectPrestamo('')" class="text-xs text-on-surface-variant hover:text-primary mt-2 inline-flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">close</span>Cambiar préstamo
+              </button>
+            }
+          </div>
+
+          @if (selectedOp(); as op) {
+            <div class="lg:col-span-2 flex flex-wrap items-center gap-x-8 gap-y-4 lg:pl-6 lg:border-l border-outline-variant">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 bg-primary/10 text-primary rounded-lg flex items-center justify-center shrink-0"><span class="material-symbols-outlined">person</span></div>
+                <div>
+                  <span class="text-[10px] uppercase tracking-wide text-outline font-bold block">Cliente</span>
                   <p class="font-bold text-on-surface">{{ op.cliente || 'Sin cliente' }}</p>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <div class="p-3 border border-outline-variant rounded-lg">
-                    <span class="text-label-md text-outline block mb-1">Salida</span>
-                    <p class="font-medium text-sm">{{ op.fecha_operacion }}</p>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wide text-outline font-bold block">Fecha Préstamo</span>
+                <p class="font-mono text-on-surface">{{ op.fecha_operacion }}</p>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wide text-outline font-bold block">Items Pendientes</span>
+                <p class="font-mono font-bold text-primary">{{ pendientesTotal() }} unidades</p>
+              </div>
+              <span class="lg:ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/15 text-yellow-300 border border-yellow-500/30 text-[11px] font-bold uppercase tracking-wide">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse"></span>En proceso
+              </span>
+            </div>
+          } @else {
+            <div class="lg:col-span-2 text-sm text-on-surface-variant flex items-center gap-2">
+              <span class="material-symbols-outlined text-outline">touch_app</span>Selecciona un préstamo para ver sus items.
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (selectedOp()) {
+        <!-- Detalle de items (tarjetas) -->
+        <section class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-headline-sm font-bold text-on-surface flex items-center gap-2">
+              <span class="w-1 h-5 bg-primary rounded-full"></span>Préstamo Seleccionado: Detalle de Items
+            </h3>
+            <span class="text-xs text-on-surface-variant">{{ lineas().length }} producto(s) con unidades pendientes</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            @for (l of lineas(); track l.detalle) {
+              <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+                <!-- Cabecera con placeholder + pendiente -->
+                <div class="relative h-24 bg-surface-container flex items-center justify-center border-b border-outline-variant">
+                  <span class="material-symbols-outlined text-5xl text-outline">handyman</span>
+                  <span class="absolute top-2 right-2 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold px-2 py-0.5 rounded font-mono">PEND: {{ l.pendiente }}</span>
+                </div>
+
+                <div class="p-4 flex flex-col gap-3 flex-1">
+                  <div>
+                    <p class="font-bold text-on-surface leading-tight">{{ l.producto_nombre }}</p>
+                    <p class="text-[11px] font-mono text-on-surface-variant">{{ l.producto_codigo }}</p>
                   </div>
-                  <div class="p-3 border border-outline-variant rounded-lg">
-                    <span class="text-label-md text-outline block mb-1">Vencimiento</span>
-                    <p class="font-medium text-sm text-error">{{ op.fecha_devolucion || '—' }}</p>
+
+                  <div>
+                    <p class="text-[10px] uppercase tracking-wide text-outline font-bold mb-1.5">Estado del Item</p>
+                    <div class="grid grid-cols-3 gap-2">
+                      <button type="button" (click)="l.estado = 'bueno'"
+                        [ngClass]="l.estado === 'bueno' ? 'border-green-500 bg-green-500/15 text-green-400' : 'border-outline-variant text-on-surface-variant hover:border-outline'"
+                        class="flex flex-col items-center gap-1 py-2 rounded-lg border-2 transition-colors text-[10px] font-bold uppercase tracking-wide">
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>Bueno
+                      </button>
+                      <button type="button" (click)="l.estado = 'dañado'"
+                        [ngClass]="l.estado === 'dañado' ? 'border-yellow-500 bg-yellow-500/15 text-yellow-300' : 'border-outline-variant text-on-surface-variant hover:border-outline'"
+                        class="flex flex-col items-center gap-1 py-2 rounded-lg border-2 transition-colors text-[10px] font-bold uppercase tracking-wide">
+                        <span class="material-symbols-outlined text-[18px]">build</span>Dañado
+                      </button>
+                      <button type="button" (click)="l.estado = 'perdido'"
+                        [ngClass]="l.estado === 'perdido' ? 'border-red-500 bg-red-500/15 text-red-300' : 'border-outline-variant text-on-surface-variant hover:border-outline'"
+                        class="flex flex-col items-center gap-1 py-2 rounded-lg border-2 transition-colors text-[10px] font-bold uppercase tracking-wide">
+                        <span class="material-symbols-outlined text-[18px]">error</span>Perdido
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between mt-auto pt-1">
+                    <span class="text-[10px] uppercase tracking-wide text-on-surface-variant font-bold">Cant. a Devolver</span>
+                    <div class="flex items-center gap-2">
+                      <button type="button" (click)="dec(l)" class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high text-on-surface">-</button>
+                      <input type="number" min="0" [max]="l.pendiente" [(ngModel)]="l.cantidad" [name]="'c' + l.detalle"
+                        class="w-12 text-center bg-surface-container-low border border-outline-variant rounded-lg py-1 text-on-surface outline-none focus:ring-2 focus:ring-primary" />
+                      <button type="button" (click)="inc(l)" class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded-lg hover:bg-surface-container-high text-on-surface">+</button>
+                    </div>
                   </div>
                 </div>
               </div>
-            }
-          </section>
-
-          @if (selectedOp()) {
-            <section class="bg-primary-container text-on-primary-container p-5 rounded-xl shadow-sm relative overflow-hidden">
-              <div class="relative z-10">
-                <h3 class="text-label-md uppercase tracking-wider mb-2 opacity-80">Unidades Pendientes</h3>
-                <div class="text-4xl font-extrabold mb-1">{{ pendientesTotal() }}</div>
-                <p class="text-label-md">Artículos aún en posesión del cliente</p>
-              </div>
-              <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-8xl opacity-10">inventory</span>
-            </section>
-          }
-        </div>
-
-        <!-- Columna derecha: formulario de retorno -->
-        <div class="lg:col-span-2 space-y-6">
-          <section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-outline-variant bg-surface-bright">
-              <h3 class="text-headline-sm font-bold text-primary">Formulario de Retorno</h3>
-            </div>
-
-            @if (!selectedOp()) {
-              <div class="p-12 text-center text-on-surface-variant">
-                <span class="material-symbols-outlined text-4xl text-outline block mb-2">touch_app</span>
-                Selecciona un préstamo para registrar su devolución.
-              </div>
-            } @else {
-              <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[560px]">
-                  <thead>
-                    <tr class="bg-surface-container text-on-surface-variant border-b border-outline-variant">
-                      <th class="px-5 py-3 text-label-md font-bold">Producto</th>
-                      <th class="px-5 py-3 text-label-md font-bold w-24">Pendiente</th>
-                      <th class="px-5 py-3 text-label-md font-bold w-40">Cant. devolver</th>
-                      <th class="px-5 py-3 text-label-md font-bold">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline-variant">
-                    @for (l of lineas(); track l.detalle) {
-                      <tr>
-                        <td class="px-5 py-3">
-                          <p class="font-bold text-on-surface">{{ l.producto_nombre }}</p>
-                          <p class="text-[12px] text-outline font-mono">{{ l.producto_codigo }}</p>
-                        </td>
-                        <td class="px-5 py-3 font-bold text-headline-sm">{{ l.pendiente }}</td>
-                        <td class="px-5 py-3">
-                          <div class="flex items-center gap-2">
-                            <button type="button" (click)="dec(l)" class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded hover:bg-surface-container-high">-</button>
-                            <input type="number" min="0" [max]="l.pendiente" [(ngModel)]="l.cantidad" [name]="'c' + l.detalle"
-                              class="w-14 text-center border border-outline-variant rounded py-1 outline-none focus:ring-2 focus:ring-primary" />
-                            <button type="button" (click)="inc(l)" class="w-8 h-8 flex items-center justify-center border border-outline-variant rounded hover:bg-surface-container-high">+</button>
-                          </div>
-                        </td>
-                        <td class="px-5 py-3">
-                          <select [(ngModel)]="l.estado" [name]="'e' + l.detalle"
-                            class="w-full bg-surface-container-low border-none rounded-lg text-label-md py-2 px-2 outline-none focus:ring-2 focus:ring-primary">
-                            <option [ngValue]="'bueno'">Buen estado</option>
-                            <option [ngValue]="'dañado'">Dañado</option>
-                            <option [ngValue]="'perdido'">Perdido</option>
-                          </select>
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr><td colspan="4" class="px-5 py-8 text-center text-on-surface-variant">Este préstamo no tiene unidades pendientes.</td></tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-              <div class="p-4 bg-surface-container-low/50">
-                <textarea [(ngModel)]="observaciones" name="obs" rows="2" placeholder="Notas de la devolución (opcional)..."
-                  class="w-full border border-outline-variant rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary text-body-md"></textarea>
+            } @empty {
+              <div class="md:col-span-2 xl:col-span-3 p-10 text-center text-on-surface-variant bg-surface-container-lowest border border-outline-variant rounded-xl">
+                Este préstamo no tiene unidades pendientes.
               </div>
             }
-          </section>
-        </div>
-      </div>
+          </div>
+
+          <!-- Notas -->
+          <textarea [(ngModel)]="observaciones" name="obs" rows="2" placeholder="Notas de la devolución (opcional)..."
+            class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary text-body-md text-on-surface"></textarea>
+        </section>
+      }
 
       <!-- Historial -->
       <section class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
@@ -176,11 +200,43 @@ interface LineaDev {
             <tbody class="divide-y divide-outline-variant">
               @for (d of historial(); track d.id) {
                 <tr>
-                  <td class="px-5 py-3 font-mono text-xs">{{ d.operacion_codigo }}</td>
+                  <td class="px-5 py-3">
+                    <span class="font-mono text-xs px-2 py-1 border border-outline-variant rounded text-on-surface-variant">{{ d.operacion_codigo }}</span>
+                  </td>
                   <td class="px-5 py-3">{{ d.producto_nombre }}</td>
-                  <td class="px-5 py-3 font-bold">{{ d.cantidad_devuelta }}</td>
-                  <td class="px-5 py-3 capitalize">{{ d.estado_devolucion }}</td>
-                  <td class="px-5 py-3 text-on-surface-variant">{{ d.fecha_devolucion }}</td>
+                  <td class="px-5 py-3 font-mono font-bold text-primary">{{ d.cantidad_devuelta }}</td>
+                  <td class="px-5 py-3">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wide border"
+                        [ngClass]="{
+                          'bg-green-500/15 text-green-400 border-green-500/30': d.estado_devolucion === 'bueno',
+                          'bg-yellow-500/15 text-yellow-300 border-yellow-500/30': d.estado_devolucion === 'dañado',
+                          'bg-red-500/15 text-red-300 border-red-500/30': d.estado_devolucion === 'perdido'
+                        }">
+                        <span class="w-1.5 h-1.5 rounded-full"
+                          [ngClass]="{
+                            'bg-green-400': d.estado_devolucion === 'bueno',
+                            'bg-yellow-400': d.estado_devolucion === 'dañado',
+                            'bg-red-400': d.estado_devolucion === 'perdido'
+                          }"></span>{{ d.estado_devolucion }}
+                      </span>
+                      @if (d.estado_devolucion === 'dañado' && d.mantenimiento_id) {
+                        <a routerLink="/mantenimiento" [queryParams]="{ estado: 'pendiente' }"
+                          class="inline-flex items-center gap-1 text-[11px] font-bold text-orange-300 bg-orange-500/15 px-2 py-0.5 rounded hover:bg-orange-500/25 transition-colors"
+                          title="Ver en Mantenimiento">
+                          <span class="material-symbols-outlined text-[13px]">build</span>MN-{{ d.mantenimiento_id }}
+                        </a>
+                      }
+                      @if (d.estado_devolucion === 'perdido' && d.perdida_id) {
+                        <a routerLink="/perdidas" [queryParams]="{ estado: 'pendiente' }"
+                          class="inline-flex items-center gap-1 text-[11px] font-bold text-red-300 bg-red-500/15 px-2 py-0.5 rounded hover:bg-red-500/25 transition-colors"
+                          title="Ver cargo por pérdida">
+                          <span class="material-symbols-outlined text-[13px]">money_off</span>PD-{{ d.perdida_id }}
+                        </a>
+                      }
+                    </div>
+                  </td>
+                  <td class="px-5 py-3 text-on-surface-variant font-mono">{{ d.fecha_devolucion }}</td>
                 </tr>
               } @empty {
                 <tr><td colspan="5" class="px-5 py-6 text-center text-on-surface-variant">Sin devoluciones registradas.</td></tr>
@@ -208,6 +264,37 @@ export class OperacionesDevoluciones implements OnInit {
 
   pendientesTotal = computed(() => this.lineas().reduce((a, l) => a + l.pendiente, 0));
   totalARetornar = computed(() => this.lineas().reduce((a, l) => a + (Number(l.cantidad) || 0), 0));
+
+  // ── Buscador de préstamo (typeahead por código o cliente) ──
+  filtroPrestamo = signal('');
+  mostrarLista = signal(false);
+
+  prestamosFiltrados = computed(() => {
+    const t = this.filtroPrestamo().trim().toLowerCase();
+    const todos = this.prestamos();
+    if (!t) return todos;
+    return todos.filter(
+      (p) =>
+        p.codigo_operacion.toLowerCase().includes(t) ||
+        (p.cliente ?? '').toLowerCase().includes(t),
+    );
+  });
+
+  onFiltroPrestamo(term: string): void {
+    this.filtroPrestamo.set(term);
+    this.mostrarLista.set(true);
+  }
+
+  elegirPrestamo(p: Operacion): void {
+    this.filtroPrestamo.set('');
+    this.mostrarLista.set(false);
+    this.selectPrestamo(p.id);
+  }
+
+  // Cierra la lista tras un breve retardo para que el click en un ítem alcance a dispararse.
+  cerrarListaLuego(): void {
+    setTimeout(() => this.mostrarLista.set(false), 150);
+  }
 
   ngOnInit(): void {
     this.loadPrestamos();
@@ -296,10 +383,16 @@ export class OperacionesDevoluciones implements OnInit {
       }),
     );
 
+    const danadas = aEnviar.filter((l) => l.estado === 'dañado').reduce((a, l) => a + Number(l.cantidad), 0);
+
     forkJoin(calls).subscribe({
       next: () => {
         this.saving.set(false);
-        this.successMsg.set(`Devolución registrada para ${op.codigo_operacion}.`);
+        this.successMsg.set(
+          danadas > 0
+            ? `Devolución registrada para ${op.codigo_operacion}. ${danadas} unidad(es) dañada(s) quedaron pendientes en Mantenimiento.`
+            : `Devolución registrada para ${op.codigo_operacion}.`,
+        );
         this.selectedOp.set(null);
         this.lineas.set([]);
         this.observaciones = '';

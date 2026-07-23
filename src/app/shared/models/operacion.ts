@@ -8,6 +8,7 @@ export type { Paginated };
 export type TipoOperacion = 'venta' | 'prestamo';
 export type EstadoOperacion = 'activa' | 'finalizada' | 'cancelada';
 export type EstadoDevolucion = 'bueno' | 'dañado' | 'perdido';
+export type EstadoPerdida = 'pendiente' | 'cobrado' | 'condonado';
 
 // ─────────────────────────────────────────────
 // DETALLE — tal como lo devuelve DetalleReadSerializer
@@ -28,6 +29,15 @@ export interface DetalleOperacion {
 // ─────────────────────────────────────────────
 // OPERACIÓN — tal como la devuelve OperacionReadSerializer
 // ─────────────────────────────────────────────
+// Datos de contacto del cliente real (OperacionReadSerializer.cliente_info)
+export interface ClienteInfo {
+  cliente_id: number;
+  nombre: string;
+  telefono: string;
+  numero_documento: string;
+  direccion: string | null;
+}
+
 export interface Operacion {
   id: number;
   codigo_operacion: string;
@@ -35,7 +45,12 @@ export interface Operacion {
   estado: EstadoOperacion;
   usuario: number;
   usuario_nombre: string;
-  cliente: string | null;
+  cliente: string | null; // snapshot del nombre (o "Consumidor final")
+  cliente_ref: number | null; // id del Cliente real
+  cliente_documento: string | null; // snapshot del documento
+  cliente_info: ClienteInfo | null; // contacto (para vencidos/detalle)
+  deposito: string; // Decimal → string (garantía del préstamo)
+  deposito_devuelto: boolean;
   fecha_operacion: string; // 'YYYY-MM-DD'
   fecha_devolucion: string | null; // 'YYYY-MM-DD'
   observaciones: string | null;
@@ -52,7 +67,8 @@ export interface DetalleOperacionWrite {
 
 export interface OperacionWrite {
   tipo_operacion: TipoOperacion;
-  cliente?: string | null;
+  cliente_ref?: number | null; // id del Cliente (obligatorio en préstamos)
+  deposito?: string | number; // garantía del préstamo
   fecha_devolucion?: string | null;
   observaciones?: string | null;
   detalles: DetalleOperacionWrite[];
@@ -91,6 +107,53 @@ export interface Devolucion {
   estado_devolucion: EstadoDevolucion;
   fecha_devolucion: string; // 'YYYY-MM-DD'
   observaciones: string | null;
+  // Si estado_devolucion === 'dañado', id del registro de Mantenimiento
+  // 'pendiente' creado automáticamente para esta devolución.
+  mantenimiento_id: number | null;
+  // Si estado_devolucion === 'perdido', id de la Perdida (cargo al cliente).
+  perdida_id: number | null;
+}
+
+// ─────────────────────────────────────────────
+// PÉRDIDA — cargo al cliente por producto perdido
+// (PerdidaReadSerializer)
+// ─────────────────────────────────────────────
+export const PERDIDA_ESTADOS: { value: EstadoPerdida; label: string }[] = [
+  { value: 'pendiente', label: 'Pendiente de cobro' },
+  { value: 'cobrado', label: 'Cobrado' },
+  { value: 'condonado', label: 'Condonado' },
+];
+
+export interface Perdida {
+  perd_id: number;
+  estado: EstadoPerdida;
+  devolucion: number | null;
+  operacion_codigo: string | null;
+  producto: number;
+  producto_nombre: string;
+  producto_codigo: string;
+  cliente: string | null;
+  cantidad: number;
+  valor_unitario: string; // DecimalField → string en JSON
+  monto_total: string;
+  fecha_registro: string; // 'YYYY-MM-DD'
+  fecha_cobro: string | null;
+  observaciones: string | null;
+  usuario: number;
+  usuario_nombre: string;
+}
+
+// PATCH /perdidas/{id}/ — solo mientras esté pendiente
+export interface PerdidaUpdate {
+  valor_unitario?: string | number;
+  observaciones?: string | null;
+}
+
+export interface PerdidaFiltros {
+  estado?: EstadoPerdida | '';
+  search?: string;
+  page?: number;
+  ordering?: string;
 }
 
 // Payload de DevolucionWriteSerializer
