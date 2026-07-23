@@ -70,10 +70,6 @@ export class Login {
     });
   }
 
-  goToRegister(): void {
-    this.router.navigate(['/register']);
-  }
-
   private markFormGroupTouched(): void {
     Object.keys(this.form.controls).forEach(key => {
       this.form.get(key)?.markAsTouched();

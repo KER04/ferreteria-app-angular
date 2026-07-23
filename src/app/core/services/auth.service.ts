@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { Observable, tap, map, finalize, BehaviorSubject } from 'rxjs';
 import {
   LoginI,
   LoginResponseI,
   RefreshResponseI,
-  RegisterI,
-  RegisterResponseI,
   UserI,
 } from '../../shared/models/auth';
 
@@ -16,7 +15,7 @@ const USER_KEY = 'ferretex_user';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private baseUrl = 'http://localhost:8000/api/auth';
+  private baseUrl = `${environment.apiUrl}/auth`;
 
   private readonly ADMIN_ROLES = ['administrador', 'admin'];
 
@@ -103,10 +102,6 @@ export class AuthService {
         this.storeUser(response.user);
       })
     );
-  }
-
-  register(userData: RegisterI): Observable<RegisterResponseI> {
-    return this.http.post<RegisterResponseI>(`${this.baseUrl}/register/`, userData);
   }
 
   // Renueva el access token usando el refresh (usado por el interceptor en 401)

@@ -1,14 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { EMPTY, Observable } from 'rxjs';
 import { expand, reduce } from 'rxjs/operators';
 import { Paginated, Producto } from '../../shared/models/producto';
 import {
   Costo,
-  CostoWrite,
   FinalizarPayload,
   MantCatalogoFiltros,
   Mantenimiento,
+  MantenimientoCompletarPayload,
   MantenimientoUpdate,
   MantenimientoWrite,
   RegistroFiltros,
@@ -44,8 +45,8 @@ export function extraerErrorHttp(err: unknown, fallback: string): string {
 @Injectable({ providedIn: 'root' })
 export class MantenimientoService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8000/api/mantenimiento';
-  private productosUrl = 'http://localhost:8000/api/inventario/productos/';
+  private baseUrl = `${environment.apiUrl}/mantenimiento`;
+  private productosUrl = `${environment.apiUrl}/inventario/productos/`;
 
   // ── helper: recorre todas las páginas DRF de un endpoint ──
   private fetchAll<T>(url: string, params?: HttpParams): Observable<T[]> {
@@ -103,6 +104,12 @@ export class MantenimientoService {
     return this.http.post<Mantenimiento>(`${this.baseUrl}/registros/${id}/cancelar/`, {});
   }
 
+  // POST /registros/{id}/completar/ — completa un registro 'pendiente'
+  // (creado por una devolución dañada) con el tipo real y lo pasa a 'en_proceso'
+  completarRegistro(id: number, body: MantenimientoCompletarPayload): Observable<Mantenimiento> {
+    return this.http.post<Mantenimiento>(`${this.baseUrl}/registros/${id}/completar/`, body);
+  }
+
   // ─────────────────────────────────────────────
   // TIPOS  (/tipos/)
   // ─────────────────────────────────────────────
@@ -130,28 +137,11 @@ export class MantenimientoService {
   }
 
   // ─────────────────────────────────────────────
-  // COSTOS  (/costos/)
+  // COSTOS  (/costos/) — solo lectura; los costos se crean/editan
+  // desde el propio registro de mantenimiento.
   // ─────────────────────────────────────────────
-  getCostos(filtros: MantCatalogoFiltros = {}): Observable<Paginated<Costo>> {
-    let params = new HttpParams();
-    if (filtros.page) params = params.set('page', String(filtros.page));
-    return this.http.get<Paginated<Costo>>(`${this.baseUrl}/costos/`, { params });
-  }
-
   getAllCostos(): Observable<Costo[]> {
     return this.fetchAll<Costo>(`${this.baseUrl}/costos/`);
-  }
-
-  createCosto(body: CostoWrite): Observable<Costo> {
-    return this.http.post<Costo>(`${this.baseUrl}/costos/`, body);
-  }
-
-  updateCosto(id: number, body: CostoWrite): Observable<Costo> {
-    return this.http.patch<Costo>(`${this.baseUrl}/costos/${id}/`, body);
-  }
-
-  deleteCosto(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/costos/${id}/`);
   }
 
   // ─────────────────────────────────────────────

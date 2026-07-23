@@ -33,7 +33,7 @@ Construido con un enfoque **profesional y realista**: autenticación por token, 
 | 🔐 **Autenticación** | Login con JWT, refresh automático de token, sesión persistente y guards de ruta. |
 | 📊 **Dashboard** | KPIs reales (productos, stock bajo, valor de inventario), alertas de stock, préstamos vencidos y actividad reciente. |
 | 📦 **Inventario** | CRUD de productos con foto, **búsqueda en vivo**, filtros server-side, paginación y **segmentación de stock** (disponible / prestado / mantenimiento / total). |
-| 🗂️ **Catálogos** | Gestión unificada de Marcas, Categorías y Tipos de préstamo (con pestañas). |
+| 🗂️ **Catálogos** | Gestión unificada de Marcas y Categorías (con pestañas). |
 | 🛒 **Ventas / Operaciones** | Ventas y préstamos con líneas de detalle, finalizar/cancelar, búsqueda en vivo y tarjetas de resumen. |
 | ↩️ **Devoluciones** | Flujo por préstamo: eliges la operación y devuelves cada línea indicando cantidad y estado (bueno / dañado / perdido). |
 | ⏰ **Préstamos vencidos** | Vista de atrasos críticos con días de retraso y monto en riesgo. |
@@ -81,7 +81,7 @@ src/app/
 ├── features/
 │   ├── auth/            # login
 │   ├── dashboard/
-│   ├── inventario/      # productos + catálogos (marcas, categorías, préstamos)
+│   ├── inventario/      # productos + catálogos (marcas, categorías)
 │   ├── operaciones/     # ventas/préstamos, devoluciones, vencidos
 │   ├── mantenimiento/   # registros, tipos, costos, salidas
 │   ├── admin/           # usuarios, roles, recursos
