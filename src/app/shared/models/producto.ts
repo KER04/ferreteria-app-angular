@@ -49,12 +49,6 @@ export interface TipoCategoria {
   tipr_nombre: string;
 }
 
-export interface Prestamo {
-  pres_id: number;
-  pres_nombre: string;
-  tipo_prestamo: string;
-}
-
 // Cuerpos de escritura (POST/PUT/PATCH) — sin campos read_only
 export interface ProductoWrite {
   prod_nombre: string;
@@ -63,7 +57,7 @@ export interface ProductoWrite {
   proveedor?: string | null;
   tipo_operacion_permitida: TipoOperacion;
   prod_valor_unitario: string | number;
-  prod_estado: ProdEstado;
+  // prod_estado no se envía: lo deriva/gestiona el backend automáticamente.
   prod_cantidad_disponible: number;
   prod_stock_minimo: number;
   tipo_categoria: number;
@@ -79,11 +73,6 @@ export interface TipoCategoriaWrite {
   tipr_nombre: string;
 }
 
-export interface PrestamoWrite {
-  pres_nombre: string;
-  tipo_prestamo: string;
-}
-
 // Filtros comunes de los catálogos (SearchFilter + OrderingFilter + paginación)
 export interface CatalogoFiltros {
   search?: string;
@@ -96,6 +85,8 @@ export interface ProductoFiltros {
   marca?: number | '';
   tipo_categoria?: number | '';
   prod_estado?: ProdEstado | '';
+  // Disponibilidad real según stock (para la tabla de inventario).
+  disponibilidad?: 'disponible' | 'agotado' | '';
   bajo_stock?: boolean;
   search?: string;
   page?: number;

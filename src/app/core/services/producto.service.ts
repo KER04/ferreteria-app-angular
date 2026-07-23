@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { EMPTY, Observable, expand, reduce } from 'rxjs';
 import {
   CatalogoFiltros,
@@ -7,8 +8,6 @@ import {
   Marca,
   MarcaWrite,
   Paginated,
-  Prestamo,
-  PrestamoWrite,
   Producto,
   ProductoFiltros,
   ProductoWrite,
@@ -42,7 +41,7 @@ export function extraerErrorApi(err: any, fallback = 'Ocurrió un error. Intenta
 @Injectable({ providedIn: 'root' })
 export class ProductoService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8000/api/inventario';
+  private baseUrl = `${environment.apiUrl}/inventario`;
 
   // ── Helpers ──────────────────────────────────────────────
   private catalogoParams(filtros: CatalogoFiltros = {}): HttpParams {
@@ -82,6 +81,7 @@ export class ProductoService {
     if (filtros.marca) params = params.set('marca', String(filtros.marca));
     if (filtros.tipo_categoria) params = params.set('tipo_categoria', String(filtros.tipo_categoria));
     if (filtros.prod_estado) params = params.set('prod_estado', filtros.prod_estado);
+    if (filtros.disponibilidad) params = params.set('disponibilidad', filtros.disponibilidad);
     if (filtros.bajo_stock) params = params.set('bajo_stock', 'true');
     if (filtros.search) params = params.set('search', filtros.search);
     if (filtros.page) params = params.set('page', String(filtros.page));
@@ -146,29 +146,6 @@ export class ProductoService {
 
   deleteCategoria(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/tipo-categoria/${id}/`);
-  }
-
-  // ── PRÉSTAMOS ────────────────────────────────────────────
-  getPrestamos(filtros: CatalogoFiltros = {}): Observable<Paginated<Prestamo>> {
-    return this.http.get<Paginated<Prestamo>>(`${this.baseUrl}/prestamos/`, {
-      params: this.catalogoParams(filtros),
-    });
-  }
-
-  getTodosPrestamos(): Observable<Prestamo[]> {
-    return this.getTodos<Prestamo>(`${this.baseUrl}/prestamos/`);
-  }
-
-  createPrestamo(data: PrestamoWrite): Observable<Prestamo> {
-    return this.http.post<Prestamo>(`${this.baseUrl}/prestamos/`, data);
-  }
-
-  updatePrestamo(id: number, data: PrestamoWrite): Observable<Prestamo> {
-    return this.http.put<Prestamo>(`${this.baseUrl}/prestamos/${id}/`, data);
-  }
-
-  deletePrestamo(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/prestamos/${id}/`);
   }
 
   // ── DASHBOARD ────────────────────────────────────────────

@@ -7,7 +7,6 @@ import { ProductoService, extraerErrorApi } from '../../core/services/producto.s
 import {
   DashboardResumen,
   Marca,
-  ProdEstado,
   Producto,
   ProductoWrite,
   TipoCategoria,
@@ -23,7 +22,6 @@ interface ProductoForm {
   proveedor: string;
   tipo_operacion_permitida: TipoOperacion;
   prod_valor_unitario: string;
-  prod_estado: ProdEstado;
   prod_cantidad_disponible: number;
   prod_stock_minimo: number;
   tipo_categoria: number | '';
@@ -38,7 +36,6 @@ function formVacio(): ProductoForm {
     proveedor: '',
     tipo_operacion_permitida: 'mixto',
     prod_valor_unitario: '',
-    prod_estado: 'Disponible',
     prod_cantidad_disponible: 0,
     prod_stock_minimo: 0,
     tipo_categoria: '',
@@ -77,10 +74,10 @@ export class Inventario implements OnInit {
   // ── Filtros (ligados con ngModel) ────────────────
   brandFilter: number | '' = '';
   categoryFilter: number | '' = '';
-  statusFilter: ProdEstado | '' = '';
+  // En la tabla el producto solo es "disponible" o "agotado" (según stock real).
+  disponibilidadFilter: '' | 'disponible' | 'agotado' = '';
   onlyLowStock = false;
 
-  readonly estados: ProdEstado[] = ['Disponible', 'Prestado', 'Mantenimiento', 'Dañado', 'Agotado'];
   readonly tiposOperacion: { value: TipoOperacion; label: string }[] = [
     { value: 'venta', label: 'Solo venta' },
     { value: 'prestamo', label: 'Solo préstamo' },
@@ -116,6 +113,30 @@ export class Inventario implements OnInit {
 
   rangeStart = computed(() => (this.count() === 0 ? 0 : (this.page() - 1) * this.pageSize + 1));
   rangeEnd = computed(() => Math.min(this.page() * this.pageSize, this.count()));
+
+  // ── Presentación: nivel de stock y estado ────────
+  // % de disponible sobre el total (para la barra de nivel de stock).
+  stockPct(p: Producto): number {
+    if (!p.prod_cantidad_total) return 0;
+    return Math.min(100, Math.round((p.prod_cantidad_disponible / p.prod_cantidad_total) * 100));
+  }
+
+  // Color de la barra según severidad del stock disponible.
+  stockBarClass(p: Producto): string {
+    if (p.prod_cantidad_disponible === 0) return 'bg-error';
+    if (p.bajo_stock) return 'bg-secondary';
+    return 'bg-primary';
+  }
+
+  // Badge de estado (punto + texto) coherente con el tema oscuro.
+  // En la tabla el estado se deriva del STOCK DISPONIBLE real, no de prod_estado
+  // (que es un único campo para todo el producto y sería engañoso: p. ej. si
+  // de 10 unidades vuelve 1 dañada, no queremos marcar todo el producto).
+  estadoBadge(p: Producto): { dot: string; text: string; label: string } {
+    return (p.prod_cantidad_disponible ?? 0) > 0
+      ? { dot: 'bg-green-400', text: 'text-green-400', label: 'Disponible' }
+      : { dot: 'bg-red-400', text: 'text-red-300', label: 'Agotado' };
+  }
 
   ngOnInit(): void {
     this.loadCatalogos();
@@ -167,7 +188,7 @@ export class Inventario implements OnInit {
       .getProductos({
         marca: this.brandFilter,
         tipo_categoria: this.categoryFilter,
-        prod_estado: this.statusFilter,
+        disponibilidad: this.disponibilidadFilter,
         bajo_stock: this.onlyLowStock,
         search: this.searchTerm.trim() || undefined,
         page: this.page(),
@@ -196,7 +217,7 @@ export class Inventario implements OnInit {
   clearFilters(): void {
     this.brandFilter = '';
     this.categoryFilter = '';
-    this.statusFilter = '';
+    this.disponibilidadFilter = '';
     this.onlyLowStock = false;
     this.searchTerm = '';
     this.applyFilters();
@@ -206,7 +227,7 @@ export class Inventario implements OnInit {
     return (
       !!this.brandFilter ||
       !!this.categoryFilter ||
-      !!this.statusFilter ||
+      !!this.disponibilidadFilter ||
       this.onlyLowStock ||
       !!this.searchTerm.trim()
     );
@@ -237,7 +258,6 @@ export class Inventario implements OnInit {
       proveedor: p.proveedor ?? '',
       tipo_operacion_permitida: (p.tipo_operacion_permitida as TipoOperacion) || 'mixto',
       prod_valor_unitario: p.prod_valor_unitario,
-      prod_estado: p.prod_estado,
       prod_cantidad_disponible: p.prod_cantidad_disponible,
       prod_stock_minimo: p.prod_stock_minimo,
       tipo_categoria: p.tipo_categoria,
@@ -300,7 +320,6 @@ export class Inventario implements OnInit {
       proveedor: f.proveedor.trim() || null,
       tipo_operacion_permitida: f.tipo_operacion_permitida,
       prod_valor_unitario: f.prod_valor_unitario,
-      prod_estado: f.prod_estado,
       prod_cantidad_disponible: Number(f.prod_cantidad_disponible),
       prod_stock_minimo: Number(f.prod_stock_minimo),
       tipo_categoria: f.tipo_categoria,

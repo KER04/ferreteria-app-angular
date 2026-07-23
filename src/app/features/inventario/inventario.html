@@ -65,14 +65,13 @@
     <div class="space-y-1">
       <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
       <select
-        [(ngModel)]="statusFilter"
+        [(ngModel)]="disponibilidadFilter"
         (ngModelChange)="applyFilters()"
         class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
       >
-        <option [ngValue]="''">Todos los estados</option>
-        @for (e of estados; track e) {
-          <option [ngValue]="e">{{ e }}</option>
-        }
+        <option [ngValue]="''">Todos</option>
+        <option [ngValue]="'disponible'">Disponible</option>
+        <option [ngValue]="'agotado'">Agotado</option>
       </select>
     </div>
 
@@ -116,11 +115,11 @@
       <thead class="bg-surface-container-low text-on-surface-variant border-b border-outline-variant">
         <tr>
           <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Código</th>
-          <th class="px-4 py-4 font-bold text-xs uppercase tracking-widest">Foto</th>
-          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Producto / Modelo</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Producto</th>
           <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Categoría</th>
           <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Precio Unit.</th>
-          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-center">Segmentación de Stock</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Nivel de Stock</th>
+          <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest">Estado</th>
           <th class="px-6 py-4 font-bold text-xs uppercase tracking-widest text-right">Acciones</th>
         </tr>
       </thead>
@@ -145,54 +144,55 @@
                 <span class="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{{ p.codigo_producto }}</span>
               </td>
 
-              <!-- Foto -->
-              <td class="px-4 py-4">
-                <div class="w-12 h-12 bg-surface-container rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center">
-                  @if (p.prod_foto_url) {
-                    <img [src]="p.prod_foto_url" [alt]="p.prod_nombre" (error)="p.prod_foto_url = null" class="w-full h-full object-cover" />
-                  } @else {
-                    <span class="material-symbols-outlined text-outline">imagesmode</span>
-                  }
+              <!-- Producto (con miniatura + modelo) -->
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-11 h-11 bg-surface-container rounded-lg overflow-hidden border border-outline-variant flex items-center justify-center shrink-0">
+                    @if (p.prod_foto_url) {
+                      <img [src]="p.prod_foto_url" [alt]="p.prod_nombre" (error)="p.prod_foto_url = null" class="w-full h-full object-cover" />
+                    } @else {
+                      <span class="material-symbols-outlined text-outline text-[20px]">imagesmode</span>
+                    }
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-bold text-on-surface truncate">{{ p.prod_nombre }}</div>
+                    <div class="text-xs text-on-surface-variant truncate">{{ p.prod_modelo || p.marca_nombre }}</div>
+                  </div>
                 </div>
               </td>
 
-              <!-- Producto / Modelo -->
+              <!-- Categoría (tag con color) -->
               <td class="px-6 py-4">
-                <div class="font-bold text-on-surface">{{ p.prod_nombre }}</div>
-                <div class="text-xs text-on-surface-variant">{{ p.prod_modelo || p.marca_nombre }}</div>
-              </td>
-
-              <!-- Categoría -->
-              <td class="px-6 py-4">
-                <span class="text-sm px-2 py-1 bg-surface-container-highest rounded text-on-surface-variant font-medium">{{ p.tipo_categoria_nombre }}</span>
+                <span class="inline-flex items-center text-[11px] px-2 py-1 bg-primary/15 text-primary rounded font-bold uppercase tracking-wide border border-primary/25">{{ p.tipo_categoria_nombre }}</span>
               </td>
 
               <!-- Precio -->
               <td class="px-6 py-4 font-bold text-on-surface whitespace-nowrap">{{ p.prod_valor_unitario | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
 
-              <!-- Segmentación de stock -->
-              <td class="px-6 py-4">
-                <div class="flex justify-center gap-2">
-                  <div class="flex flex-col items-center relative">
-                    <span class="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">{{ p.prod_cantidad_disponible }}</span>
-                    <span class="text-[9px] uppercase mt-1 opacity-60">Disp.</span>
-                    @if (p.bajo_stock) {
-                      <span class="material-symbols-outlined text-error text-xs absolute -top-1 -right-1" style="font-variation-settings: 'FILL' 1;">warning</span>
-                    }
-                  </div>
-                  <div class="flex flex-col items-center">
-                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">{{ p.prod_cantidad_prestada }}</span>
-                    <span class="text-[9px] uppercase mt-1 opacity-60">Pres.</span>
-                  </div>
-                  <div class="flex flex-col items-center">
-                    <span class="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-200">{{ p.prod_cantidad_en_mantenimiento }}</span>
-                    <span class="text-[9px] uppercase mt-1 opacity-60">Mant.</span>
-                  </div>
-                  <div class="flex flex-col items-center">
-                    <span class="bg-inverse-surface text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{{ p.prod_cantidad_total }}</span>
-                    <span class="text-[9px] uppercase mt-1 opacity-60 font-bold">Total</span>
-                  </div>
+              <!-- Nivel de stock (barra) -->
+              <td class="px-6 py-4 min-w-[210px]">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-sm font-bold text-on-surface">{{ p.prod_cantidad_disponible }} <span class="text-on-surface-variant font-normal">de {{ p.prod_cantidad_total }} u.</span></span>
+                  <span class="text-[11px] font-bold text-on-surface-variant">{{ stockPct(p) }}%</span>
                 </div>
+                <div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all" [ngClass]="stockBarClass(p)" [style.width.%]="stockPct(p)"></div>
+                </div>
+                <div class="flex items-center gap-3 mt-1.5 text-[10px] text-on-surface-variant">
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>{{ p.prod_cantidad_prestada }} pres.</span>
+                  <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>{{ p.prod_cantidad_en_mantenimiento }} mant.</span>
+                </div>
+              </td>
+
+              <!-- Estado -->
+              <td class="px-6 py-4">
+                <span class="inline-flex items-center gap-1.5 font-bold text-sm" [ngClass]="estadoBadge(p).text">
+                  <span class="w-2 h-2 rounded-full" [ngClass]="estadoBadge(p).dot"></span>
+                  {{ estadoBadge(p).label }}
+                </span>
+                @if (p.bajo_stock) {
+                  <span class="block text-[10px] text-error font-bold uppercase tracking-wide mt-0.5">Stock bajo</span>
+                }
               </td>
 
               <!-- Acciones -->
@@ -325,7 +325,7 @@
   </div>
 
   <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center">
+    <div class="w-12 h-12 rounded-lg bg-blue-500/15 text-blue-300 flex items-center justify-center">
       <span class="material-symbols-outlined text-3xl">engineering</span>
     </div>
     <div>
@@ -335,7 +335,7 @@
   </div>
 
   <div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex items-center gap-4">
-    <div class="w-12 h-12 rounded-lg bg-green-100 text-green-800 flex items-center justify-center">
+    <div class="w-12 h-12 rounded-lg bg-green-500/15 text-green-400 flex items-center justify-center">
       <span class="material-symbols-outlined text-3xl">inventory_2</span>
     </div>
     <div>
@@ -438,11 +438,10 @@
           <div class="space-y-1">
             <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Valor Unitario *</label>
             <input
-              type="number"
+              type="text"
+              inputmode="decimal"
               name="prod_valor_unitario"
               [(ngModel)]="form.prod_valor_unitario"
-              min="0"
-              step="0.01"
               required
               placeholder="0.00"
               class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
@@ -495,21 +494,9 @@
             </select>
           </div>
 
-          <!-- Estado (solo al editar; al crear siempre es "Disponible") -->
-          @if (editing()) {
-            <div class="space-y-1">
-              <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Estado</label>
-              <select
-                name="prod_estado"
-                [(ngModel)]="form.prod_estado"
-                class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-10 px-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-              >
-                @for (e of estados; track e) {
-                  <option [ngValue]="e">{{ e }}</option>
-                }
-              </select>
-            </div>
-          }
+          <!-- El estado (Disponible/Agotado) lo deriva el sistema del stock;
+               ya no se edita a mano. -->
+
 
           <!-- Cantidad disponible -->
           <div class="space-y-1">
